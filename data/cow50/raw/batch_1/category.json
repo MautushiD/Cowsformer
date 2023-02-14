@@ -1,0 +1,11 @@
+[
+    {
+        "supercategory": "poi",
+        "color": [
+            250, 50, 83
+        ],
+        "isthing": 1,
+        "id": 1,
+        "name": "cow"
+    }
+]

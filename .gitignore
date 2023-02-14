@@ -8,6 +8,8 @@ ipynb_checkpoints
 .env
 # **/data/*
 
+lightning_logs/*
+
 # common files
 *.csv
 *.txt
@@ -21,6 +23,7 @@ ipynb_checkpoints
 *.mp4
 *.mov
 *.avi
+*.bin
 
 # exception
 !/data_demo/*
