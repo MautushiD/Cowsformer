@@ -1,0 +1,3 @@
+GPU is available, CUDA used
+Downloading and preparing dataset data/Cow50 to /home/niche/.cache/huggingface/datasets/data/Cow50/1.0.0/c19c55ebd0e9bbec9e2fb4dd157bce1ac71961a599c5cd0c92621ecf68c0bcbf...
+Dataset data downloaded and prepared to /home/niche/.cache/huggingface/datasets/data/Cow50/1.0.0/c19c55ebd0e9bbec9e2fb4dd157bce1ac71961a599c5cd0c92621ecf68c0bcbf. Subsequent calls will reuse this data.

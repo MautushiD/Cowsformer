@@ -1,0 +1,30 @@
+
+Due to MODULEPATH changes, the following have been reloaded:
+  1) Anaconda3/2020.11
+
+Generating train split: 0 examples [00:00, ? examples/s]                                                        /home/niche/.conda/envs/tf/lib/python3.9/site-packages/transformers/models/detr/feature_extraction_detr.py:1344: UserWarning: `label_ids_to_fuse` unset. No instance will be fused.
+  warnings.warn("`label_ids_to_fuse` unset. No instance will be fused.")
+Traceback (most recent call last):
+  File "/home/niche/cowsformer/naive_eval.py", line 38, in <module>
+    for data in dataset:
+  File "/home/niche/.conda/envs/tf/lib/python3.9/site-packages/datasets/arrow_dataset.py", line 2174, in __iter__
+    formatted_output = format_table(
+  File "/home/niche/.conda/envs/tf/lib/python3.9/site-packages/datasets/formatting/formatting.py", line 634, in format_table
+    return formatter(pa_table, query_type=query_type)
+  File "/home/niche/.conda/envs/tf/lib/python3.9/site-packages/datasets/formatting/formatting.py", line 406, in __call__
+    return self.format_row(pa_table)
+  File "/home/niche/.conda/envs/tf/lib/python3.9/site-packages/datasets/formatting/formatting.py", line 442, in format_row
+    row = self.python_features_decoder.decode_row(row)
+  File "/home/niche/.conda/envs/tf/lib/python3.9/site-packages/datasets/formatting/formatting.py", line 225, in decode_row
+    return self.features.decode_example(row) if self.features else row
+  File "/home/niche/.conda/envs/tf/lib/python3.9/site-packages/datasets/features/features.py", line 1846, in decode_example
+    return {
+  File "/home/niche/.conda/envs/tf/lib/python3.9/site-packages/datasets/features/features.py", line 1847, in <dictcomp>
+    column_name: decode_nested_example(feature, value, token_per_repo_id=token_per_repo_id)
+  File "/home/niche/.conda/envs/tf/lib/python3.9/site-packages/datasets/features/features.py", line 1309, in decode_nested_example
+    return schema.decode_example(obj, token_per_repo_id=token_per_repo_id)
+  File "/home/niche/.conda/envs/tf/lib/python3.9/site-packages/datasets/features/image.py", line 163, in decode_example
+    image = PIL.Image.open(path)
+  File "/home/niche/.conda/envs/tf/lib/python3.9/site-packages/PIL/Image.py", line 3131, in open
+    fp = builtins.open(filename, "rb")
+FileNotFoundError: [Errno 2] No such file or directory: 'data/cow50/cvat/train/images/img28.jpeg'
