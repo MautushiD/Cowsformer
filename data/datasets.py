@@ -9,6 +9,7 @@ from PIL import Image
 # torch
 import torch
 from torch.utils.data import DataLoader
+import torchvision
 from transformers import DetrFeatureExtractor
 
 
@@ -55,6 +56,25 @@ class CocoPanoptic(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.coco["images"])
+
+class CocoDetection(torchvision.datasets.CocoDetection):
+    def __init__(self, img_folder, ann_file, feature_extractor, train=True):
+        super(CocoDetection, self).__init__(img_folder, ann_file)
+        self.feature_extractor = feature_extractor
+
+    def __getitem__(self, idx):
+        # read in PIL image and target in COCO format
+        img, target = super(CocoDetection, self).__getitem__(idx)
+        
+        # preprocess image and target (converting target to DETR format, resizing + normalization of both image and target)
+        image_id = self.ids[idx]
+        target = {'image_id': image_id, 'annotations': target}
+        encoding = self.feature_extractor(images=img, annotations=target, return_tensors="pt")
+        pixel_values = encoding["pixel_values"].squeeze() # remove batch dimension
+        target = encoding["labels"][0] # remove batch dimension
+
+        return pixel_values, target
+    
 
 
 # # pick the 3rd image
