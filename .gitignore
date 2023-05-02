@@ -8,7 +8,10 @@ ipynb_checkpoints
 .env
 # **/data/*
 
+# folder
 lightning_logs/*
+**/node_modules/*
+ring_capture
 
 # common files
 *.csv
@@ -27,3 +30,4 @@ lightning_logs/*
 
 # exception
 !/data_demo/*
+!/ring_capture/packages/examples
