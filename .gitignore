@@ -6,18 +6,15 @@ __pycache__
 *.ipynb_checkpoints
 ipynb_checkpoints
 .env
-# **/data/*
-
-# folder
-lightning_logs/*
 **/node_modules/*
-ring_capture
 
 # common files
 *.csv
 *.txt
+*.json
 *.png
 *.jpg
+*.JPG
 *.jpeg
 *.gif
 *.bmp
@@ -26,8 +23,26 @@ ring_capture
 *.mp4
 *.mov
 *.avi
-*.bin
+*.bmp
+*.zip
+
+# log
+*.log
+*.err
+*.out
+
+# torch model
+*.pt
+*.pth
+*.log
+*.err
+*.yaml
+*.ckpt
+
+# folders
+slides/
+modules/
 
 # exception
-!/data_demo/*
-!/ring_capture/packages/examples
+!**/demo/**
+!requirements.txt
