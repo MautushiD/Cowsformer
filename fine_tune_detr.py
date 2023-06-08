@@ -1,4 +1,4 @@
-#https://colab.research.google.com/github/NielsRogge/Transformers-Tutorials/blob/master/DETR/Fine_tuning_DetrForSegmentation_on_custom_dataset_end_to_end_approach.ipynb#scrollTo=J-ma9DPmL9t_
+# https://colab.research.google.com/github/NielsRogge/Transformers-Tutorials/blob/master/DETR/Fine_tuning_DetrForSegmentation_on_custom_dataset_end_to_end_approach.ipynb#scrollTo=J-ma9DPmL9t_
 
 # native
 import os
@@ -170,7 +170,9 @@ if __name__ == "__main__":
         model=model, lr=1e-4, lr_backbone=1e-5, weight_decay=1e-4, loader=loader
     )
 
-    trainer = pl.Trainer(max_epochs=2, gradient_clip_val=0.1, accelerator='gpu', devices=1)
+    trainer = pl.Trainer(
+        max_epochs=2, gradient_clip_val=0.1, accelerator="gpu", devices=1
+    )
     trainer.fit(model)
 
     # save model

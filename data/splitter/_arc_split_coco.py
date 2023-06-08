@@ -31,7 +31,7 @@ def main():
         save_json(json_out, split)
 
 
-def read_coco(path_json):
+def read_coco(path_json) -> dict:
     with open(path_json, "r") as f:
         coco_annot = json.load(f)
     return coco_annot
@@ -55,7 +55,7 @@ def split_ids(ls_id, prop_train=0.64, prop_val=0.16):
     return id_train, id_val, id_test
 
 
-def make_json(image_ids, coco_annot):
+def make_json(image_ids: list, coco_annot: dict) -> dict:
     json_out = dict(
         info=coco_annot["info"],
         licenses=coco_annot["licenses"],
