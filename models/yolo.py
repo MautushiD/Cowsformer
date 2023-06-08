@@ -9,11 +9,11 @@ ROOT = os.path.dirname(os.path.dirname(__file__))
 
 
 class Niche_YOLO:
-    def __init__(self, path_model="yolov8m.pt"):
+    def __init__(self, path_model, dir_train, dir_val):
         # attributes
         self.model = None
-        self.dir_train = os.path.join(ROOT, "out", "train")
-        self.dir_val = os.path.join(ROOT, "out", "val")
+        self.dir_train = dir_train  # out/train
+        self.dir_val = dir_val  # out/val
 
         # init
         self.load(path_model)
@@ -22,20 +22,23 @@ class Niche_YOLO:
         self.model = YOLO(path_model)
         print("model %s loaded" % path_model)
 
-    def train(self, path_data, batch, dir_out):
+    def train(self, path_data, dir_out, batch=16, epochs=100):
         """
         args
         ----
             path_data: str
                 path to data.yaml
+            dir_out: str
+                task folder name. Default "train_1"
             batch: int
                 batch size
-            name: str
-                task folder name. Default "train_1"
+            epochs: int
+                number of epochs
         """
         self.model.train(
             data=path_data,
             batch=batch,
+            epochs=epochs,
             device=get_device(),
             project=self.dir_train,
             name=dir_out,

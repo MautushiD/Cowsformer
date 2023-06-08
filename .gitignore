@@ -1,10 +1,9 @@
 # env
 *.DS_Store
 **/.DS_Store
+*.ipynb_checkpoints
 __pycache__
 .vscode
-*.ipynb_checkpoints
-ipynb_checkpoints
 .env
 **/node_modules/*
 
@@ -38,6 +37,7 @@ ipynb_checkpoints
 *.err
 *.yaml
 *.ckpt
+*.cache
 
 # folders
 slides/

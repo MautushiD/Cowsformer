@@ -88,9 +88,10 @@ class YOLO_Splitter(Splitter):
         n_included = len(id_remaining) if n_included == 0 else n_included
         ratio_train = self.ratio_train / (self.ratio_train + self.ratio_val)
         n_train = int(ratio_train * n_included)
+        n_val = n_included - n_train
         # assignment
         self.id_train = id_remaining[:n_train]
-        self.id_val = id_remaining[n_train:]
+        self.id_val = id_remaining[n_train : n_train + n_val]
         self.id_test = id_test
 
     def write_dataset(self):
@@ -100,10 +101,12 @@ class YOLO_Splitter(Splitter):
 
     def _handle_folders(self):
         for s in ["train", "val", "test"]:
-            if not os.path.exists(os.path.join(self.path_root, s)):
-                os.mkdir(os.path.join(self.path_root, s))
-                os.mkdir(os.path.join(self.path_root, s, "images"))
-                os.mkdir(os.path.join(self.path_root, s, "labels"))
+            dir_out = os.path.join(self.path_root, s)
+            if os.path.exists(dir_out):
+                shutil.rmtree(dir_out)
+            os.mkdir(dir_out)
+            os.mkdir(os.path.join(dir_out, "images"))
+            os.mkdir(os.path.join(dir_out, "labels"))
 
     def _write_yaml(self, classes: list):
         self.config.write(
