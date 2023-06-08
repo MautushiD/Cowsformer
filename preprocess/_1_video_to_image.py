@@ -1,33 +1,93 @@
 import os
 import cv2
+import time
+import re
 
 # variables
-NAME_BATCH = "batch_2306"
-OUT_N = 2
+YY = time.strftime("%Y")[-2:]
+MM = time.strftime("%m")
+DD = time.strftime("%d")
+NAME_BATCH = "batch_%s%s%s" % (YY, MM, DD)
+N_FRAME = 30
+
 # constants
 ROOT = os.path.dirname(os.path.dirname(__file__))
-DIR_SRC = os.path.join(ROOT, "modules", "ring_capture", "out", NAME_BATCH)
-DIR_OUT = os.path.join(ROOT, "data", "cow100")
-os.chdir(DIR_SRC)
+DIR_SRC = os.path.join(ROOT, "modules", "ring_capture", "out")
+DIR_BATCH = os.path.join(DIR_SRC, NAME_BATCH)
+DIR_OUT = os.path.join(ROOT, "data", "cow100", "_images")
 
-# remove videos that are not complete
-ls_rm = [f for f in os.listdir() if f.endswith("_1.mp4")]
-for rm in ls_rm:
-    os.remove(rm)
 
-# use cv to extract first frame of each video (mp4)
-ls_mp4 = [f for f in os.listdir() if f.endswith("_0.mp4")]
-for i, name_mp4 in enumerate(ls_mp4):
-    name_img = "img_%d_%d.jpg" % (OUT_N, i)
-    path_mp4 = os.path.join(DIR_SRC, name_mp4)
-    path_img = os.path.join(DIR_OUT, "_images", name_img)
+# main
+def main():
+    result = make_dir(DIR_BATCH)
+    if not result:
+        print("No new videos to process")
 
+    rm_incomplete_videos(DIR_SRC)
+    mv_videos_to_batch(DIR_SRC, DIR_BATCH)
+    n_batch = get_n_batch(DIR_OUT)
+    ls_mp4 = ls_all_mp4(DIR_BATCH)
+    for i, name_mp4 in enumerate(ls_mp4):
+        # define path
+        name_img = "img_%d_%d.jpg" % (n_batch, i)
+        path_mp4 = os.path.join(DIR_BATCH, name_mp4)
+        path_img = os.path.join(DIR_OUT, name_img)
+
+        # read and write video
+        frame = get_frame(path_mp4, N_FRAME)
+        try:
+            cv2.imwrite(path_img, frame)
+        except:
+            print("Failed to write %s" % name_mp4)
+            continue
+    print("Wrote %d images to %s" % (len(ls_mp4), DIR_OUT))
+
+
+def make_dir(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+        return True
+    else:
+        return False
+
+
+def rm_incomplete_videos(dir_src):
+    # remove videos that are not complete
+    ls_rm = [f for f in os.listdir(dir_src) if f.endswith("_1.mp4")]
+    for rm in ls_rm:
+        os.remove(rm)
+    print("Removed %d incomplete videos" % len(ls_rm))
+
+
+def mv_videos_to_batch(dir_src, dir_batch):
+    # move videos to batch folder
+    ls_mv = [f for f in os.listdir(dir_src) if f.endswith(".mp4")]
+    for mv in ls_mv:
+        os.rename(mv, os.path.join(dir_batch, mv))
+    print("Moved %d videos to %s" % (len(ls_mv), dir_batch))
+
+
+def get_n_batch(dir_out):
+    ls_jpgs = [f for f in os.listdir(dir_out) if f.endswith(".jpg")]
+    max_batch = max([int(re.findall(r"\d+", f)[0]) for f in ls_jpgs])
+    return max_batch + 1
+
+
+def ls_all_mp4(dir):
+    return [f for f in os.listdir(dir) if f.endswith(".mp4")]
+
+
+def get_frame(path_mp4, n_frame):
     cap = cv2.VideoCapture(path_mp4)
-    # get the 30th frame
-    cap.set(cv2.CAP_PROP_POS_FRAMES, 30)
+    cap.set(cv2.CAP_PROP_POS_FRAMES, n_frame)
     ret, frame = cap.read()
-    try:
-        cv2.imwrite(path_img, frame)
-    except:
-        print("Error: %s" % name_mp4)
     cap.release()
+    return frame
+
+
+def write_image(path_img, frame):
+    cv2.imwrite(path_img, frame)
+
+
+if __name__ == "__main__":
+    main()
