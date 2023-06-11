@@ -14,6 +14,7 @@ This trial aims to compare the performance difference based on two factors:
 """
 
 import os
+import argparse
 
 # local imports
 from models.yolo import Niche_YOLO
@@ -29,39 +30,41 @@ PATH_DATA = os.path.join(DIR_COW200, "data.yaml")
 
 # model configuration
 BATCH = 16
-N_INTER = 10
 
 
-def main():
-    for i in range(N_INTER):
-        for n_train in [20, 50, 80]:
-            # every iteration, shuffle the dataset
-            splitter = YOLO_Splitter(DIR_COW200, classes=["cow"])
-            splitter.shuffle_train_val(n_included=n_train)
-            splitter.write_dataset()
+def main(i):
+    for n_train in [20, 50, 80]:
+        # every iteration, shuffle the dataset
+        splitter = YOLO_Splitter(DIR_COW200, classes=["cow"])
+        splitter.shuffle_train_val(n_included=n_train)
+        splitter.write_dataset()
 
-            for yolo_base in ["yolov8n.pt", "yolov8m.pt", "yolov8x.pt"]:
-                # log
-                print("-----------------------------------")
-                print("n_train: %d, yolo_base: %s, i: %d" % (n_train, yolo_base, i))
-                print("-----------------------------------")
-                # define paths
-                dir_out = "n%d_%s_i%d" % (n_train, yolo_base[:-3], i)
-                path_yolo = os.path.join(DIR_MODEL, yolo_base)
+        for yolo_base in ["yolov8n.pt", "yolov8m.pt", "yolov8x.pt"]:
+            # log
+            print("-----------------------------------")
+            print("n_train: %d, yolo_base: %s, i: %d" % (n_train, yolo_base, i))
+            print("-----------------------------------")
+            # define paths
+            dir_out = "n%d_%s_i%d" % (n_train, yolo_base[:-3], i)
+            path_yolo = os.path.join(DIR_MODEL, yolo_base)
 
-                # configure model
-                yolo = Niche_YOLO(
-                    path_model=path_yolo,
-                    dir_train=os.path.join(DIR_OUT, "train"),
-                    dir_val=os.path.join(DIR_OUT, "val"),
-                )
+            # configure model
+            yolo = Niche_YOLO(
+                path_model=path_yolo,
+                dir_train=os.path.join(DIR_OUT, "train"),
+                dir_val=os.path.join(DIR_OUT, "val"),
+            )
 
-                # train
-                yolo.train(PATH_DATA, dir_out, BATCH)
+            # train
+            yolo.train(PATH_DATA, dir_out, BATCH)
 
-                # evaluate
-                yolo.evaluate(dir_out)
+            # evaluate
+            yolo.evaluate(dir_out)
 
 
 if __name__ == "__main__":
-    main()
+    # parse arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--iter", type=int, default=0)
+    args = parser.parse_args()
+    main(args.iter)
