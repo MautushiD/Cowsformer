@@ -6,7 +6,7 @@ def get_device():
     if torch.backends.mps.is_available():
         device = "mps"
     elif torch.cuda.is_available():
-        device = "cuda"
+        device = "0"
     else:
         device = "cpu"
     return device

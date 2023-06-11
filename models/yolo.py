@@ -1,4 +1,5 @@
 import os
+import json
 from ultralytics import YOLO
 
 # local imports
@@ -58,10 +59,10 @@ class Niche_YOLO:
         # save metrics
         path_out = os.path.join(self.dir_val, dir_out, "results.json")
         with open(path_out, "w") as f:
-            json = ext_metrics(metrics)
-            json.dump(json, f)
+            json_metrics = ext_metrics(metrics)
+            json.dump(json_metrics, f)
         # return mAP50
-        return json["map50"]
+        return json_metrics["map50"]
 
 
 def ext_metrics(metrics):
@@ -83,18 +84,18 @@ def ext_metrics(metrics):
     f1 = metrics.box.f1[0].round(4)
     # confusion matrix
     conf_mat = metrics.confusion_matrix.matrix  # conf=0.25, iou_thres=0.45
-    n_all = conf_mat[:, 0].sum().astype(int)
-    n_missed = conf_mat[1, 0].sum().astype(int)
-    n_false = conf_mat[0, 1].sum().astype(int)
+    n_all = conf_mat[:, 0].sum()
+    n_missed = conf_mat[1, 0].sum()
+    n_false = conf_mat[0, 1].sum()
     # write json
-    json = dict(
+    json_out = dict(
         map5095=map5095,
         map50=map50,
         precision=precision,
         recall=recall,
         f1=f1,
-        n_all=n_all,
-        n_missed=n_missed,
-        n_false=n_false,
+        n_all=int(n_all),
+        n_missed=int(n_missed),
+        n_false=int(n_false),
     )
-    return json
+    return json_out
