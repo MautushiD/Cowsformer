@@ -29,7 +29,7 @@ PATH_DATA = os.path.join(DIR_COW200, "data.yaml")
 
 # model configuration
 BATCH = 16
-N_INTER = 10
+N_INTER = 100
 
 
 def main():
@@ -40,7 +40,8 @@ def main():
             splitter.shuffle_train_val(n_included=n_train)
             splitter.write_dataset()
 
-            for yolo_base in ["yolov8n.pt", "yolov8m.pt", "yolov8x.pt"]:
+            for yolo_base in ["yolov8n.pt"]:
+            # for yolo_base in ["yolov8n.pt", "yolov8m.pt", "yolov8x.pt"]:
                 # log
                 print("-----------------------------------")
                 print("n_train: %d, yolo_base: %s, i: %d" % (n_train, yolo_base, i))

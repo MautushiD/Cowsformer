@@ -9,8 +9,8 @@
 #SBATCH --output=out.log
 #SBATCH --error=out.err
 
-module load site/tinkercliffs-rome_a100/easybuild/setup
-module load Anaconda3/2020.11
+# module load site/tinkercliffs-rome_a100/easybuild/setup
+# module load Anaconda3/2020.11
 source activate tf
 
 export PYTORCH_CUDA_ALLOC_CONF=garbage_collection_threshold:0.6,max_split_size_mb:128
