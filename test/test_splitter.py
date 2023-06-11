@@ -14,6 +14,7 @@ DIR_DATA = os.path.join(ROOT, "data")
 DIR_COW200 = os.path.join(DIR_DATA, "cow100", "yolov5")
 PATH_DATA = os.path.join(DIR_COW200, "data.yaml")
 DIR_TRAIN = os.path.join(DIR_COW200, "train", "images")
+DIR_VAL = os.path.join(DIR_COW200, "val", "images")
 # model configuration
 N_INTER = 100
 
@@ -28,6 +29,8 @@ splitter = YOLO_Splitter(DIR_COW200, classes=["cow"])
 splitter.shuffle_train_val(n_included=n_train)
 splitter.write_dataset()
 
+# os.listdir(DIR_TRAIN)
+os.listdir(DIR_VAL)
 
 
 test
