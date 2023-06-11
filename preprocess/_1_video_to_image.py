@@ -22,6 +22,7 @@ def main():
     result = make_dir(DIR_BATCH)
     if not result:
         print("No new videos to process")
+        exit()
 
     rm_incomplete_videos(DIR_SRC)
     mv_videos_to_batch(DIR_SRC, DIR_BATCH)
@@ -55,7 +56,8 @@ def rm_incomplete_videos(dir_src):
     # remove videos that are not complete
     ls_rm = [f for f in os.listdir(dir_src) if f.endswith("_1.mp4")]
     for rm in ls_rm:
-        os.remove(rm)
+        file = os.path.join(dir_src, rm)
+        os.remove(file)
     print("Removed %d incomplete videos" % len(ls_rm))
 
 
@@ -63,7 +65,9 @@ def mv_videos_to_batch(dir_src, dir_batch):
     # move videos to batch folder
     ls_mv = [f for f in os.listdir(dir_src) if f.endswith(".mp4")]
     for mv in ls_mv:
-        os.rename(mv, os.path.join(dir_batch, mv))
+        file_old = os.path.join(dir_src, mv)
+        file_new = os.path.join(dir_batch, mv)
+        os.rename(file_old, file_new)
     print("Moved %d videos to %s" % (len(ls_mv), dir_batch))
 
 
