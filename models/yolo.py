@@ -10,11 +10,12 @@ ROOT = os.path.dirname(os.path.dirname(__file__))
 
 
 class Niche_YOLO:
-    def __init__(self, path_model, dir_train, dir_val):
+    def __init__(self, path_model, dir_train, dir_val, name_task=""):
         # attributes
         self.model = None
         self.dir_train = dir_train  # out/train
         self.dir_val = dir_val  # out/val
+        self.name_task = name_task # suffix for folder name
 
         # init
         self.load(path_model)
@@ -23,14 +24,12 @@ class Niche_YOLO:
         self.model = YOLO(path_model)
         print("model %s loaded" % path_model)
 
-    def train(self, path_data, dir_out, batch=16, epochs=100):
+    def train(self, path_data, batch=16, epochs=100):
         """
         args
         ----
             path_data: str
                 path to data.yaml
-            dir_out: str
-                task folder name. Default "train_1"
             batch: int
                 batch size
             epochs: int
@@ -42,22 +41,22 @@ class Niche_YOLO:
             epochs=epochs,
             device=get_device(),
             project=self.dir_train,
-            name=dir_out,
+            name=self.name_task,
             exist_ok=True,
         )
-        best_model = os.path.join(self.dir_train, dir_out, "weights", "best.pt")
+        best_model = os.path.join(self.dir_train, self.name_task, "weights", "best.pt")
         self.load(best_model)
 
-    def evaluate(self, dir_out, split="test"):
+    def evaluate(self, split="test"):
         metrics = self.model.val(
             split=split,
             device=get_device(),
             project=self.dir_val,
-            name=dir_out,
+            name=self.name_task,
             exist_ok=True,
         )
         # save metrics
-        path_out = os.path.join(self.dir_val, dir_out, "results.json")
+        path_out = os.path.join(self.dir_val, self.name_task, "results.json")
         with open(path_out, "w") as f:
             json_metrics = ext_metrics(metrics)
             json.dump(json_metrics, f)

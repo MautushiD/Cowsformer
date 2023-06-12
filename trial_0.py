@@ -25,46 +25,53 @@ ROOT = os.path.dirname(__file__)
 DIR_OUT = os.path.join(ROOT, "out")
 DIR_MODEL = os.path.join(ROOT, "models")
 DIR_DATA = os.path.join(ROOT, "data")
-DIR_COW200 = os.path.join(DIR_DATA, "cow100", "yolov5")
+DIR_COW200 = os.path.join(DIR_DATA, "cow200", "yolov5")
 PATH_DATA = os.path.join(DIR_COW200, "data.yaml")
 
 # model configuration
 BATCH = 16
+EPOCHS = 100
 
+def main(args):
+    # parse arguments
+    i = args.iter
+    n_train = args.n_train
+    yolo_base = args.yolo_base
+    suffix = args.suffix
 
-def main(i):
-    for n_train in [10, 25, 50, 100, 200]:
-        # every iteration, shuffle the dataset
-        splitter = YOLO_Splitter(DIR_COW200, classes=["cow"])
-        splitter.shuffle_train_val(n_included=n_train)
-        splitter.write_dataset()
+    # shuffle dataset
+    splitter = YOLO_Splitter(DIR_COW200, classes=["cow"])
+    splitter.shuffle_train_val(n_included=n_train)
+    splitter.write_dataset()
 
-        for yolo_base in ["yolov8n.pt", "yolov8m.pt", "yolov8x.pt"]:
-            # log
-            print("-----------------------------------")
-            print("n_train: %d, yolo_base: %s, i: %d" % (n_train, yolo_base, i))
-            print("-----------------------------------")
-            # define paths
-            dir_out = "n%d_%s_i%d" % (n_train, yolo_base[:-3], i)
-            path_yolo = os.path.join(DIR_MODEL, yolo_base)
+    # log
+    print("-----------------------------------")
+    print("n_train: %d, yolo_base: %s, i: %d" % (n_train, yolo_base, i))
+    print("-----------------------------------")
+    # define paths
+    name_task = "n%d_%s_i%d_%s" % (n_train, yolo_base[:-3], i, suffix)
 
-            # configure model
-            yolo = Niche_YOLO(
-                path_model=path_yolo,
-                dir_train=os.path.join(DIR_OUT, "train"),
-                dir_val=os.path.join(DIR_OUT, "val"),
-            )
+    # configure model
+    yolo = Niche_YOLO(
+        path_model=os.path.join(DIR_MODEL, yolo_base),
+        dir_train=os.path.join(DIR_OUT, "train"),
+        dir_val=os.path.join(DIR_OUT, "val"),
+        name_task=name_task
+    )
 
-            # train
-            yolo.train(PATH_DATA, dir_out, BATCH)
+    # train
+    yolo.train(PATH_DATA, BATCH, EPOCHS)
 
-            # evaluate
-            yolo.evaluate(dir_out)
+    # evaluate
+    yolo.evaluate()
 
 
 if __name__ == "__main__":
     # parse arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("--iter", type=int, default=0)
+    parser.add_argument("--iter", type=int, help="iteration number")
+    parser.add_argument("--n_train", type=int, help="number of images in training set")
+    parser.add_argument("--yolo_base", type=str, help="e.g., yolo8n, yolo8m, yolo8x")
+    parser.add_argument("--suffix", type=str, help="suffix for folder name")
     args = parser.parse_args()
-    main(args.iter)
+    main(args)

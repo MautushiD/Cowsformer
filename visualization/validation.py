@@ -18,10 +18,8 @@ sns.relplot(x="size",
             kind="line",
             hue="model",
             col="metrics",
-            col_wrap=3,
+            col_wrap=2,
             facet_kws=dict(sharey=False),
-            # err_style="bars",
-            # errorbar=("se", 2), 
             data=data.query("metrics in ['precision', 'recall', 'map50', 'map5095']"))
 
 

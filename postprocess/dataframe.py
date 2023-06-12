@@ -6,7 +6,7 @@ import pandas as pd
 import os
 import json
 
-ROOT = os.path.dirname(__file__)
+ROOT = os.path.dirname(os.path.dirname(__file__))
 DIR_VAL = os.path.join(ROOT, "out", "val")
 PATH_OUT = os.path.join(ROOT, "out", "result.csv")
 
@@ -21,8 +21,8 @@ def main():
     )
     for t in ls_trials:
         dir_trial = os.path.join(DIR_VAL, t)
-        # obtain size, model, iter
-        size, model, iter = t.split("_")
+        # folder name: n20_yolov8n_i0_run0
+        size, model, iter, _ = t.split("_")
         size = int(size[1:])
         iter = int(iter[1:])
         # load json
