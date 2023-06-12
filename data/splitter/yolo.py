@@ -12,16 +12,20 @@ root/
         img_2_13_jpg.rf.d69528304f2d10b633c6d94982185cb2.txt
         ...
     <suffix>/
+        images/ # copy from root/images/
+        labels/ # copy from root/labels/
         train.txt
         val.txt
         test.txt
         data.yaml
 
 """
+## TODO: Add multi-threading vs. single-threading option
 
 import os
 import shutil
 import random
+import pathlib
 
 from .splitter import Splitter
 
@@ -39,11 +43,16 @@ class YOLO_Splitter(Splitter):
         self.suffix = suffix
         self.classes = classes
         self.path_yaml = None
-        os.mkdir(os.path.join(path_root, suffix), exist_ok=True)
-        super().__init__(path_root, ratio_train, ratio_val, ratio_test)
+        pathlib.Path(os.path.join(path_root, suffix)).mkdir(parents=True, exist_ok=True)
+        # copy images and labels
+        shutil.copytree(os.path.join(path_root, "images"), os.path.join(path_root, suffix, "images"))
+        shutil.copytree(os.path.join(path_root, "labels"), os.path.join(path_root, suffix, "labels"))
+        shutil.copy(os.path.join(path_root, "test.txt"), os.path.join(path_root, suffix, "test.txt"))
+        self.path_root = os.path.join(path_root, suffix)
+        super().__init__(self.path_root, ratio_train, ratio_val, ratio_test)
 
     def read_dataset(self):
-        self.path_yaml = os.path.join(self.path_root, self.suffix, "data.yaml")
+        self.path_yaml = os.path.join(self.path_root, "data.yaml")
         f = open(self.path_yaml, "w")
         return f
 
@@ -101,7 +110,7 @@ class YOLO_Splitter(Splitter):
     def _write_yaml(self, classes: list):
         self.config.write(
             f"""
-                path: {os.path.join(self.path_root, self.suffix)}
+                path: {self.path_root}
                 train: "train.txt"
                 val: "val.txt"
                 test: "test.txt"
@@ -112,7 +121,7 @@ class YOLO_Splitter(Splitter):
         self.config.close()
     
     def _write_txt(self, split: str, ids: list):
-        path_txt = os.path.join(self.path_root, self.suffix, "%s.txt" % split)
+        path_txt = os.path.join(self.path_root, "%s.txt" % split)
         with open(path_txt, "w") as f:
             for id in ids:
                 f.write(os.path.join(self.path_root, "images", f"{id}.jpg") + "\n")
