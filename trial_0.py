@@ -26,7 +26,6 @@ DIR_OUT = os.path.join(ROOT, "out")
 DIR_MODEL = os.path.join(ROOT, "models")
 DIR_DATA = os.path.join(ROOT, "data")
 DIR_COW200 = os.path.join(DIR_DATA, "cow200", "yolov5")
-PATH_DATA = os.path.join(DIR_COW200, "data.yaml")
 
 # model configuration
 BATCH = 16
@@ -40,9 +39,9 @@ def main(args):
     suffix = args.suffix
 
     # shuffle dataset
-    splitter = YOLO_Splitter(DIR_COW200, classes=["cow"])
+    splitter = YOLO_Splitter(DIR_COW200, classes=["cow"], suffix=suffix)
     splitter.shuffle_train_val(n_included=n_train)
-    splitter.write_dataset()
+    path_data = splitter.write_dataset()
 
     # log
     print("-----------------------------------")
@@ -60,7 +59,7 @@ def main(args):
     )
 
     # train
-    yolo.train(PATH_DATA, BATCH, EPOCHS)
+    yolo.train(path_data, BATCH, EPOCHS)
 
     # evaluate
     yolo.evaluate()

@@ -2,7 +2,7 @@
 Folder structure:
 
 root/
-    data.yaml
+    test.txt
     images/
         img_1_13_jpg.rf.d69528304f2d10b633c6d94982185cb2.jpg
         img_2_13_jpg.rf.d69528304f2d10b633c6d94982185cb2.jpg
@@ -11,21 +11,12 @@ root/
         img_1_13_jpg.rf.d69528304f2d10b633c6d94982185cb2.txt
         img_2_13_jpg.rf.d69528304f2d10b633c6d94982185cb2.txt
         ...
-    train/
-        images/
-            ...
-        labels/
-            ...
-    val/
-        images/
-            ...
-        labels/
-            ...
-    test/
-        images/
-            ...
-        labels/
-            ...
+    <suffix>/
+        train.txt
+        val.txt
+        test.txt
+        data.yaml
+
 """
 
 import os
@@ -40,16 +31,20 @@ class YOLO_Splitter(Splitter):
         self,
         path_root: str,
         classes: list,
+        suffix: str = "",
         ratio_train: float = 0.64,
         ratio_val: float = 0.16,
         ratio_test: float = 0.2,
     ):
-        super().__init__(path_root, ratio_train, ratio_val, ratio_test)
+        self.suffix = suffix
         self.classes = classes
+        self.path_yaml = None
+        os.mkdir(os.path.join(path_root, suffix), exist_ok=True)
+        super().__init__(path_root, ratio_train, ratio_val, ratio_test)
 
     def read_dataset(self):
-        path_yaml = os.path.join(self.path_root, "data.yaml")
-        f = open(path_yaml, "w")
+        self.path_yaml = os.path.join(self.path_root, self.suffix, "data.yaml")
+        f = open(self.path_yaml, "w")
         return f
 
     def get_ids(self):
@@ -79,9 +74,12 @@ class YOLO_Splitter(Splitter):
             n_included: int
                 size of the training set and validation set. If 0, then use the entire available data.
         """
+        # get test ids from txt
+        path_txt = os.path.join(self.path_root, "test.txt")
+        with open(path_txt, "r") as f:
+            id_test = f.read().splitlines()        
+        id_test = [i[:-4] for i in id_test] # 001.jpg -> 001
         # obtain which ids are to be shuffled
-        path_test = os.path.join(self.path_root, "test", "images")
-        id_test = [f[:-4] for f in os.listdir(path_test) if f.endswith(".jpg")]
         id_remaining = [f for f in self.ids if f not in id_test]
         random.shuffle(id_remaining)
         # obtain each split size
@@ -95,39 +93,47 @@ class YOLO_Splitter(Splitter):
         self.id_test = id_test
 
     def write_dataset(self):
-        self._handle_folders()
         self._write_yaml(classes=self.classes)
-        self._copy_images_labels()
-
-    def _handle_folders(self):
-        for s in ["train", "val", "test"]:
-            dir_out = os.path.join(self.path_root, s)
-            if os.path.exists(dir_out):
-                shutil.rmtree(dir_out)
-            os.mkdir(dir_out)
-            os.mkdir(os.path.join(dir_out, "images"))
-            os.mkdir(os.path.join(dir_out, "labels"))
-
+        for split in ["train", "val", "test"]:
+            self._write_txt(split=split, ids=getattr(self, f"id_{split}"))
+        return self.path_yaml
+        
     def _write_yaml(self, classes: list):
         self.config.write(
             f"""
-                train: {os.path.join(self.path_root, "train", "images")}
-                val: {os.path.join(self.path_root, "val", "images")}
-                test: {os.path.join(self.path_root, "test", "images")}
+                path: {os.path.join(self.path_root, self.suffix)}
+                train: "train.txt"
+                val: "val.txt"
+                test: "test.txt"
                 nc: {len(classes)}
                 names: {classes}
             """
         )
         self.config.close()
+    
+    def _write_txt(self, split: str, ids: list):
+        path_txt = os.path.join(self.path_root, self.suffix, "%s.txt" % split)
+        with open(path_txt, "w") as f:
+            for id in ids:
+                f.write(os.path.join(self.path_root, "images", f"{id}.jpg") + "\n")
+ 
+    # def _handle_folders(self):
+    #     for s in ["train", "val", "test"]:
+    #         dir_out = os.path.join(self.path_root, s)
+    #         if os.path.exists(dir_out):
+    #             shutil.rmtree(dir_out)
+    #         os.mkdir(dir_out)
+    #         os.mkdir(os.path.join(dir_out, "images"))
+    #         os.mkdir(os.path.join(dir_out, "labels"))
 
-    def _copy_images_labels(self):
-        for s in ["train", "val", "test"]:
-            for id in getattr(self, f"id_{s}"):
-                # copy images
-                path_img = os.path.join(self.path_root, "images", f"{id}.jpg")
-                path_img_out = os.path.join(self.path_root, s, "images", f"{id}.jpg")
-                shutil.copy(path_img, path_img_out)
-                # copy labels
-                path_label = os.path.join(self.path_root, "labels", f"{id}.txt")
-                path_label_out = os.path.join(self.path_root, s, "labels", f"{id}.txt")
-                shutil.copy(path_label, path_label_out)
+    # def _copy_images_labels(self):
+    #     for s in ["train", "val", "test"]:
+    #         for id in getattr(self, f"id_{s}"):
+    #             # copy images
+    #             path_img = os.path.join(self.path_root, "images", f"{id}.jpg")
+    #             path_img_out = os.path.join(self.path_root, s, "images", f"{id}.jpg")
+    #             shutil.copy(path_img, path_img_out)
+    #             # copy labels
+    #             path_label = os.path.join(self.path_root, "labels", f"{id}.txt")
+    #             path_label_out = os.path.join(self.path_root, s, "labels", f"{id}.txt")
+    #             shutil.copy(path_label, path_label_out)
