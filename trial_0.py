@@ -33,7 +33,7 @@ BATCH = 16
 
 
 def main(i):
-    for n_train in [20, 50, 80]:
+    for n_train in [10, 25, 50, 100, 200]:
         # every iteration, shuffle the dataset
         splitter = YOLO_Splitter(DIR_COW200, classes=["cow"])
         splitter.shuffle_train_val(n_included=n_train)

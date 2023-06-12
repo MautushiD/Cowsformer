@@ -15,7 +15,7 @@
 
 export PYTORCH_CUDA_ALLOC_CONF=garbage_collection_threshold:0.6,max_split_size_mb:128
 
-for i in {1..500}
+for i in {1..300}
 do
     echo "Iteration $i"
     python3.9 /home/niche/cowsformer/trial_0.py --iter $i
