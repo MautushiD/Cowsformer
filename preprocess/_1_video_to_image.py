@@ -8,13 +8,13 @@ YY = time.strftime("%Y")[-2:]
 MM = time.strftime("%m")
 DD = time.strftime("%d")
 NAME_BATCH = "batch_%s%s%s" % (YY, MM, DD)
-N_FRAME = 30
+N_FRAME = 60
 
 # constants
 ROOT = os.path.dirname(os.path.dirname(__file__))
 DIR_SRC = os.path.join(ROOT, "modules", "ring_capture", "out")
 DIR_BATCH = os.path.join(DIR_SRC, NAME_BATCH)
-DIR_OUT = os.path.join(ROOT, "data", "cow100", "_images")
+DIR_OUT = os.path.join(ROOT, "data", "cow200", "_images")
 
 
 # main
@@ -35,12 +35,13 @@ def main():
         path_img = os.path.join(DIR_OUT, name_img)
 
         # read and write video
-        frame = get_frame(path_mp4, N_FRAME)
         try:
+            frame = get_frame(path_mp4, N_FRAME)
             cv2.imwrite(path_img, frame)
         except:
-            print("Failed to write %s" % name_mp4)
-            continue
+            frame = get_frame(path_mp4, 15)
+            cv2.imwrite(path_img, frame)
+            print("Failed to write %s, use first frame instead" % name_mp4)
     print("Wrote %d images to %s" % (len(ls_mp4), DIR_OUT))
 
 
