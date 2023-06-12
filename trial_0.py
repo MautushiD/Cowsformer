@@ -45,7 +45,7 @@ def main(args):
 
     # log
     print("-----------------------------------")
-    print("n_train: %d, yolo_base: %s, i: %d" % (n_train, yolo_base, i))
+    print("n_train: %d, yolo_base: %s, i: %d, %s" % (n_train, yolo_base, i, suffix))
     print("-----------------------------------")
     # define paths
     name_task = "n%d_%s_i%d_%s" % (n_train, yolo_base[:-3], i, suffix)

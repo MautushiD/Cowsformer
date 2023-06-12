@@ -43,11 +43,12 @@ class YOLO_Splitter(Splitter):
         self.suffix = suffix
         self.classes = classes
         self.path_yaml = None
-        pathlib.Path(os.path.join(path_root, suffix)).mkdir(parents=True, exist_ok=True)
         # copy images and labels
-        shutil.copytree(os.path.join(path_root, "images"), os.path.join(path_root, suffix, "images"))
-        shutil.copytree(os.path.join(path_root, "labels"), os.path.join(path_root, suffix, "labels"))
-        shutil.copy(os.path.join(path_root, "test.txt"), os.path.join(path_root, suffix, "test.txt"))
+        if not os.path.exists(os.path.join(path_root, suffix, "images")):
+            pathlib.Path(os.path.join(path_root, suffix)).mkdir(parents=True, exist_ok=True)
+            shutil.copytree(os.path.join(path_root, "images"), os.path.join(path_root, suffix, "images"))
+            shutil.copytree(os.path.join(path_root, "labels"), os.path.join(path_root, suffix, "labels"))
+            shutil.copy(os.path.join(path_root, "test.txt"), os.path.join(path_root, suffix, "test.txt"))
         self.path_root = os.path.join(path_root, suffix)
         super().__init__(self.path_root, ratio_train, ratio_val, ratio_test)
 
