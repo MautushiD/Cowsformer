@@ -1,4 +1,4 @@
-# post
+# run the job
 for i in 0 1 2 3
 do
     sbatch \
