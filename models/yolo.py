@@ -7,6 +7,7 @@ from .device import get_device
 
 # constants
 ROOT = os.path.dirname(os.path.dirname(__file__))
+# mAP50 is the average precision that considers both classification and bounding box localization
 
 
 class Niche_YOLO:
@@ -15,7 +16,7 @@ class Niche_YOLO:
         self.model = None
         self.dir_train = dir_train  # out/train
         self.dir_val = dir_val  # out/val
-        self.name_task = name_task # suffix for folder name
+        self.name_task = name_task  # suffix for folder name
 
         # init
         self.load(path_model)
