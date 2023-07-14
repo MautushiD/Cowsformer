@@ -1,6 +1,7 @@
 import os
 import json
 from ultralytics import YOLO
+#from ultralytics import NAS
 
 # local imports
 from .device import get_device
@@ -23,6 +24,7 @@ class Niche_YOLO:
 
     def load(self, path_model):
         self.model = YOLO(path_model)
+        #self.model = NAS('yolo_nas_l')#NAS(path_model)
         print("model %s loaded" % path_model)
 
     def train(self, path_data, batch=16, epochs=100):
