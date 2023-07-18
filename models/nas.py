@@ -33,7 +33,7 @@ class Niche_YOLO_NAS:
                 'classes': num_classes
             },
             dataloader_params={
-                'batch_size': batch_size,
+                'batch_size': batch_size,   
                 'num_workers': 2
             }
         )
@@ -42,7 +42,7 @@ class Niche_YOLO_NAS:
             dataset_params={
                 'data_dir': os.path.dirname(path_val_txt),
                 'images_dir': 'images', #os.path.join(os.path.split(path_val_txt)[0],'images'),
-                'labels_dir': 'labels' #os.path.join(os.path.split(path_val_txt)[0], 'labels'),
+                'labels_dir': 'labels', #os.path.join(os.path.split(path_val_txt)[0], 'labels'),
                 'classes': num_classes
             },
             dataloader_params={
@@ -95,5 +95,5 @@ class Niche_YOLO_NAS:
                            valid_loader=val_data)
 
     def evaluate(self):
-        # Here add the evaluation code based on your requirements
+        
         pass
