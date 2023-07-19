@@ -7,6 +7,7 @@ from super_gradients.training.dataloaders.dataloaders import coco_detection_yolo
 import torch
 import yaml
 import os
+from ultralytics import NAS
 
 DEVICE = 'cuda' if torch.cuda.is_available() else "cpu"
 
@@ -19,6 +20,10 @@ class Niche_YOLO_NAS:
         self.dir_val = dir_val
         self.model = get_model(path_model, pretrained_weights="coco").to(DEVICE)
         self.trainer = Trainer(experiment_name=name_task)
+    def load(self, path_model):
+        #self.model = YOLO(path_model)
+        self.model = NAS('yolo_nas_l')#NAS(path_model)
+        print("model %s loaded" % path_model)
 
     def train(self, path_yaml, path_train_txt, path_val_txt, batch_size, num_epochs):
         with open(path_yaml, 'r') as f:
@@ -30,7 +35,8 @@ class Niche_YOLO_NAS:
                 'data_dir': os.path.dirname(path_train_txt),
                 'images_dir': 'images', #os.path.join(os.path.split(path_train_txt)[0],'images'),
                 'labels_dir': 'labels', #os.path.join(os.path.split(path_train_txt)[0],'labels'),
-                'classes': num_classes
+                #'classes': num_classes
+                'classes': list(range(num_classes))
             },
             dataloader_params={
                 'batch_size': batch_size,   
@@ -43,7 +49,8 @@ class Niche_YOLO_NAS:
                 'data_dir': os.path.dirname(path_val_txt),
                 'images_dir': 'images', #os.path.join(os.path.split(path_val_txt)[0],'images'),
                 'labels_dir': 'labels', #os.path.join(os.path.split(path_val_txt)[0], 'labels'),
-                'classes': num_classes
+                #'classes': num_classes
+                'classes': list(range(num_classes))
             },
             dataloader_params={
                 'batch_size': batch_size,
