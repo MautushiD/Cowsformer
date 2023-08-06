@@ -1,9 +1,15 @@
+from webbrowser import get
 from super_gradients.training import Trainer
 from super_gradients.training.models import get as get_model
 from super_gradients.training.losses import PPYoloELoss
 from super_gradients.training.metrics import DetectionMetrics_050
-from super_gradients.training.models.detection_models.pp_yolo_e import PPYoloEPostPredictionCallback
-from super_gradients.training.dataloaders.dataloaders import coco_detection_yolo_format_train, coco_detection_yolo_format_val
+from super_gradients.training.models.detection_models.pp_yolo_e import (
+    PPYoloEPostPredictionCallback,
+)
+from super_gradients.training.dataloaders.dataloaders import (
+    coco_detection_yolo_format_train,
+    coco_detection_yolo_format_val,
+)
 from data.splitter.yolo import YOLO_Splitter
 import torch
 import yaml
@@ -14,7 +20,7 @@ import re
 import pandas as pd
 import matplotlib.pyplot as plt
 
-DEVICE = 'cuda' if torch.cuda.is_available() else "cpu"
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 class Niche_YOLO_NAS:
@@ -25,50 +31,53 @@ class Niche_YOLO_NAS:
         self.dir_val = dir_val
         self.model = get_model(path_model, pretrained_weights="coco").to(DEVICE)
         self.trainer = Trainer(experiment_name=name_task)
-    def load(self, path_model = None):
-        #self.model = YOLO(path_model)
+        self.train_data = None
+        self.val_data = None
+        self.test_data = None
+
+    def load(self, path_model=None):
+        # self.model = YOLO(path_model)
         if path_model is None:
-            self.model = NAS('yolo_nas_l')#NAS(path_model)
+            self.model = NAS("yolo_nas_l")  # NAS(path_model)
         else:
-            self.model = get_model('yolo_nas_l', num_classes=80, checkpoint_path=path_model)
+            self.model = get_model(
+                "yolo_nas_l", num_classes=80, checkpoint_path=path_model
+            )
         print("model %s loaded" % path_model)
 
     def train(self, path_yaml, path_train_txt, path_val_txt, batch_size, num_epochs):
-        with open(path_yaml, 'r') as f:
+        with open(path_yaml, "r") as f:
             yaml_content = yaml.safe_load(f)
-        num_classes = yaml_content['nc']
+        num_classes = yaml_content["nc"]
 
-        train_data = coco_detection_yolo_format_train(
+        self.train_data = coco_detection_yolo_format_train(
             dataset_params={
-                'data_dir': os.path.dirname(path_train_txt),
-                'images_dir': 'images', #os.path.join(os.path.split(path_train_txt)[0],'images'),
-                'labels_dir': 'labels', #os.path.join(os.path.split(path_train_txt)[0],'labels'),
+                "data_dir": os.path.dirname(path_train_txt),
+                "images_dir": "images",  # os.path.join(os.path.split(path_train_txt)[0],'images'),
+                "labels_dir": "labels",  # os.path.join(os.path.split(path_train_txt)[0],'labels'),
                 #'classes': num_classes
-                'classes': list(range(num_classes))
+                "classes": list(range(num_classes)),
             },
-            dataloader_params={
-                'batch_size': batch_size,   
-                'num_workers': 2
-            }
+            dataloader_params={"batch_size": batch_size, "num_workers": 2},
         )
 
-        val_data = coco_detection_yolo_format_val(
+        self.val_data = coco_detection_yolo_format_val(
             dataset_params={
-                'data_dir': os.path.dirname(path_val_txt),
-                'images_dir': 'images', #os.path.join(os.path.split(path_val_txt)[0],'images'),
-                'labels_dir': 'labels', #os.path.join(os.path.split(path_val_txt)[0], 'labels'),
+                "data_dir": os.path.dirname(path_val_txt),
+                "images_dir": "images",  # os.path.join(os.path.split(path_val_txt)[0],'images'),
+                "labels_dir": "labels",  # os.path.join(os.path.split(path_val_txt)[0], 'labels'),
                 #'classes': num_classes
-                'classes': list(range(num_classes))
+                "classes": list(range(num_classes)),
             },
-            dataloader_params={
-                'batch_size': batch_size,
-                'num_workers': 2
-            }
+            dataloader_params={"batch_size": batch_size, "num_workers": 2},
         )
-    
+
+        # TODO: add test data
+        self.test_data = ///
+
 
         train_params = {
-            'silent_mode': False,
+            "silent_mode": False,
             "average_best_models": True,
             "warmup_mode": "linear_epoch_step",
             "warmup_initial_lr": 1e-6,
@@ -81,12 +90,10 @@ class Niche_YOLO_NAS:
             "zero_weight_decay_on_bias_and_bn": True,
             "ema": True,
             "ema_params": {"decay": 0.9, "decay_type": "threshold"},
-            "max_epochs": 2, ##
+            "max_epochs": 2,  ##
             "mixed_precision": False,
             "loss": PPYoloELoss(
-                use_static_assigner=False,
-                num_classes=num_classes,
-                reg_max=16
+                use_static_assigner=False, num_classes=num_classes, reg_max=16
             ),
             "valid_metrics_list": [
                 DetectionMetrics_050(
@@ -98,44 +105,53 @@ class Niche_YOLO_NAS:
                         score_threshold=0.01,
                         nms_top_k=1000,
                         max_predictions=300,
-                        nms_threshold=0.7
-                    )
+                        nms_threshold=0.7,
+                    ),
                 )
             ],
-            "metric_to_watch": 'mAP@0.50'
+            "metric_to_watch": "mAP@0.50",
         }
 
-        self.trainer.train(model=self.model,
-                           training_params=train_params,
-                           train_loader=train_data,
-                           valid_loader=val_data)
-        
+        self.trainer.train(
+            model=self.model,
+            training_params=train_params,
+            train_loader=self.train_data,
+            valid_loader=self.val_data,
+        )
+
         best_model_path = os.path.join(self.dir_train, self.name_task, "ckpt_best.pth")
         self.load(best_model_path)
-        
+        ## TODO: use get function to load the best model 
+        # reference: https://docs.deci.ai/super-gradients/documentation/source/QuickstartBasicToolkit.html
+        self.model = get_model(////
+
     def get_dataloader(self, path_yaml, data_path_txt, batch_size=16):
-        with open(path_yaml, 'r') as f:
+        with open(path_yaml, "r") as f:
             yaml_content = yaml.safe_load(f)
-        num_classes = yaml_content['nc']
-        #print('num_classes', num_classes)
+        num_classes = yaml_content["nc"]
+        # print('num_classes', num_classes)
         data = coco_detection_yolo_format_train(
             dataset_params={
-                'data_dir': os.path.dirname(data_path_txt),
+                "data_dir": os.path.dirname(data_path_txt),
                 # os.path.join(os.path.split(path_train_txt)[0],'images'),
-                'images_dir': 'images',
+                "images_dir": "images",
                 # os.path.join(os.path.split(path_train_txt)[0],'labels'),
-                'labels_dir': 'labels',
+                "labels_dir": "labels",
                 #'classes': num_classes
-                'classes': list(range(num_classes))
+                "classes": list(range(num_classes)),
             },
-            dataloader_params={
-                'batch_size': batch_size,
-                'num_workers': 2
-            }
+            dataloader_params={"batch_size": batch_size, "num_workers": 2},
         )
         return data
+
     def evaluate(self, log_file_txt):
-        with open(log_file_txt, 'r') as f:
+        # TODO: add test data
+        # load the best model and evaluate the model on the test split
+        # use trainer.test() function to eavalute the model on the split
+        self.trainer.get(///
+
+        # load the log file
+        with open(log_file_txt, "r") as f:
             log_lines = f.readlines()
         metrics = []
         for line in log_lines:
@@ -143,36 +159,33 @@ class Niche_YOLO_NAS:
             if metric:
                 metrics.append(metric)
         return metrics
-    
-    def evaluation_plot(self,log_file_txt):
-        
+
+    def evaluation_plot(self, log_file_txt):
         # replace data with your actual metrics
         df = pd.DataFrame(self.evaluate(log_file_txt))
 
         # plot loss
         plt.figure(figsize=(10, 6))
-        plt.plot(df['epoch'], df['loss'], label='loss')
-        plt.title('Loss over epochs')
-        plt.xlabel('Epoch')
-        plt.ylabel('Loss')
+        plt.plot(df["epoch"], df["loss"], label="loss")
+        plt.title("Loss over epochs")
+        plt.xlabel("Epoch")
+        plt.ylabel("Loss")
         plt.legend()
         plt.show()
 
         # plot precision, recall, mAP, F1
         plt.figure(figsize=(10, 6))
-        plt.plot(df['epoch'], df['precision@0.50'], label='precision@0.50')
-        plt.plot(df['epoch'], df['recall@0.50'], label='recall@0.50')
-        plt.plot(df['epoch'], df['mAP@0.50'], label='mAP@0.50')
-        plt.plot(df['epoch'], df['F1@0.50'], label='F1@0.50')
-        plt.title('Metrics over epochs')
-        plt.xlabel('Epoch')
-        plt.ylabel('Value')
+        plt.plot(df["epoch"], df["precision@0.50"], label="precision@0.50")
+        plt.plot(df["epoch"], df["recall@0.50"], label="recall@0.50")
+        plt.plot(df["epoch"], df["mAP@0.50"], label="mAP@0.50")
+        plt.plot(df["epoch"], df["F1@0.50"], label="F1@0.50")
+        plt.title("Metrics over epochs")
+        plt.xlabel("Epoch")
+        plt.ylabel("Value")
         plt.legend()
         plt.show()
-        
-        
-        
-        
+
+
 def extract_metrics(log_line):
     regex_pattern = r"Epoch (\d+) \(\d+\/\d+\)\s+-.*Valid_PPYoloELoss/loss: (.*?)\s+Valid_Precision@0.50: (.*?)\s+Valid_Recall@0.50: (.*?)\s+Valid_mAP@0.50: (.*?)\s+Valid_F1@0.50: (.*?)\s+"
 
@@ -184,8 +197,11 @@ def extract_metrics(log_line):
         recall = float(match.group(4))
         mAP50 = float(match.group(5))
         F1 = float(match.group(6))
-        return {"epoch": epoch, "loss": loss, "precision@0.50": precision, "recall@0.50": recall, "mAP@0.50": mAP50, "F1@0.50": F1}
-        
-        
-    
-
+        return {
+            "epoch": epoch,
+            "loss": loss,
+            "precision@0.50": precision,
+            "recall@0.50": recall,
+            "mAP@0.50": mAP50,
+            "F1@0.50": F1,
+        }
