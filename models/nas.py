@@ -73,9 +73,20 @@ class Niche_YOLO_NAS:
         )
 
         # TODO: add test data
-        self.test_data = ///
+        #self.test_data = ///
+        self.test_data = coco_detection_yolo_format_val(
+            dataset_params={
+                "data_dir": os.path.dirname(path_val_txt),
+                "images_dir": "images",
+                "labels_dir": "labels",
+                "classes": list(range(num_classes)),
+            },
+            dataloader_params={"batch_size": batch_size, "num_workers": 2},
+        )
 
-
+        ##############################
+        
+        
         train_params = {
             "silent_mode": False,
             "average_best_models": True,
@@ -123,7 +134,10 @@ class Niche_YOLO_NAS:
         self.load(best_model_path)
         ## TODO: use get function to load the best model 
         # reference: https://docs.deci.ai/super-gradients/documentation/source/QuickstartBasicToolkit.html
-        self.model = get_model(////
+        #self.model = get_model(////
+        self.model = get_model("yolo_nas_l", num_classes=num_classes, checkpoint_path=best_model_path)
+        
+        #########################################
 
     def get_dataloader(self, path_yaml, data_path_txt, batch_size=16):
         with open(path_yaml, "r") as f:
@@ -148,7 +162,10 @@ class Niche_YOLO_NAS:
         # TODO: add test data
         # load the best model and evaluate the model on the test split
         # use trainer.test() function to eavalute the model on the split
-        self.trainer.get(///
+        #self.trainer.get(///
+        
+        #metrics = self.trainer.test(model=self.model, test_loader=self.test_data_loder)
+        #results = self.trainer.test(model=self.model, test_loader=self.test_data_loder)
 
         # load the log file
         with open(log_file_txt, "r") as f:
@@ -161,17 +178,20 @@ class Niche_YOLO_NAS:
         return metrics
 
     def evaluation_plot(self, log_file_txt):
-        # replace data with your actual metrics
+        
         df = pd.DataFrame(self.evaluate(log_file_txt))
 
         # plot loss
         plt.figure(figsize=(10, 6))
-        plt.plot(df["epoch"], df["loss"], label="loss")
-        plt.title("Loss over epochs")
-        plt.xlabel("Epoch")
-        plt.ylabel("Loss")
-        plt.legend()
+        # plot loss
+        plt.plot(df['epoch'], df['train_loss'], label="Train Loss")
+        plt.plot(df['epoch'], df['valid_loss'], label="Validation Loss")
+        plt.xlabel('Epochs')
+        plt.ylabel('Loss')
+        plt.legend(loc="best")
+        plt.title('Train and Validation Loss')
         plt.show()
+
 
         # plot precision, recall, mAP, F1
         plt.figure(figsize=(10, 6))
@@ -184,8 +204,9 @@ class Niche_YOLO_NAS:
         plt.ylabel("Value")
         plt.legend()
         plt.show()
+        
 
-
+'''
 def extract_metrics(log_line):
     regex_pattern = r"Epoch (\d+) \(\d+\/\d+\)\s+-.*Valid_PPYoloELoss/loss: (.*?)\s+Valid_Precision@0.50: (.*?)\s+Valid_Recall@0.50: (.*?)\s+Valid_mAP@0.50: (.*?)\s+Valid_F1@0.50: (.*?)\s+"
 
@@ -205,3 +226,29 @@ def extract_metrics(log_line):
             "mAP@0.50": mAP50,
             "F1@0.50": F1,
         }
+'''
+
+
+def extract_metrics(log_line):
+    regex_pattern = r"Epoch (\d+) \(\d+\/\d+\)\s+-.*Train_PPYoloELoss/loss: (.*?)\s+.*Valid_PPYoloELoss/loss: (.*?)\s+Valid_Precision@0.50: (.*?)\s+Valid_Recall@0.50: (.*?)\s+Valid_mAP@0.50: (.*?)\s+Valid_F1@0.50: (.*?)\s+"
+
+    match = re.search(regex_pattern, log_line)
+    if match:
+        epoch = int(match.group(1))
+        train_loss = float(match.group(2))
+        valid_loss = float(match.group(3))
+        precision = float(match.group(4))
+        recall = float(match.group(5))
+        mAP50 = float(match.group(6))
+        F1 = float(match.group(7))
+
+        return {
+            "epoch": epoch,
+            "train_loss": train_loss,
+            "valid_loss": valid_loss,
+            "precision@0.50": precision,
+            "recall@0.50": recall,
+            "mAP@0.50": mAP50,
+            "F1@0.50": F1,
+        }
+    return None

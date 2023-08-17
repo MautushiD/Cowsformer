@@ -235,51 +235,21 @@ def get_boxex_for_all_models(
     prediction_dict["Ground_Truth_boxes"] = gt_boxes
     prediction_dict["Default_YoloNas_boxes"] = default_model_boxes
     prediction_dict["Finetuned_YoloNas_boxes"] = finetuned_model_boxes
+    
+    default_boxes = []
+    finetuned_boxes = []
+    gt_boxes = []
+
+    # Construct and return the prediction dictionary
+    prediction_dict = {
+        "Default_YoloNas_boxes": default_boxes,
+        "Finetuned_YoloNas_boxes": finetuned_boxes,
+        "Ground_Truth_boxes": gt_boxes
+    }
 
     return prediction_dict
 
-'''
-def compute_iou_for_all_models(prediction_dict):
-    image_name = prediction_dict["image"]
-    gt_boxes = prediction_dict["Ground_Truth_boxes"]
-    defalt_yoloNas_boxes = prediction_dict["Default_YoloNas_boxes"]
-    finetuned_yoloNas_boxes = prediction_dict["Finetuned_YoloNas_boxes"]
 
-    final_iou_default = []  # only keep highest IoU for each ground truth box
-    final_pbb_default = (
-        []
-    )  # only keep the bb with the highest IoU for each ground truth box
-
-    final_iou_finetuned = []  # only keep highest IoU for each ground truth box
-    final_pbb_finetuned = (
-        []
-    )  # only keep the bb with the highest IoU for each ground truth box
-
-    for gt_box in gt_boxes:
-        ls_iou_default = []
-        for pred_box in defalt_yoloNas_boxes:
-            iou = bbox_iou(gt_box, pred_box)
-            ls_iou_default.append(iou)
-        idx_max = np.argmax(ls_iou_default)  # find the position with the highest IoU
-        final_iou_default.append(ls_iou_default[idx_max])
-        final_pbb_default.append(defalt_yoloNas_boxes[idx_max])
-
-    for gt_box in gt_boxes:
-        ls_iou_finetuned = []
-        for pred_box in finetuned_yoloNas_boxes:
-            iou = bbox_iou(gt_box, pred_box)
-            ls_iou_finetuned.append(iou)
-        idx_max = np.argmax(ls_iou_finetuned)  # find the position with the highest IoU
-        final_iou_finetuned.append(ls_iou_finetuned[idx_max])
-        final_pbb_finetuned.append(finetuned_yoloNas_boxes[idx_max])
-
-    iou_dict = {}
-    iou_dict["image"] = image_name
-    iou_dict["IOU_with_default_YoloNAS"] = final_iou_default
-    iou_dict["IOU_with_finetuned_YoloNAS"] = final_iou_finetuned
-
-    return iou_dict
-'''
 
 
 def compute_iou_for_all_models(prediction_dict):
@@ -333,3 +303,65 @@ def compute_iou_for_all_models(prediction_dict):
     iou_dict["IOU_with_finetuned_YoloNAS"] = final_iou_finetuned
 
     return iou_dict
+
+################
+
+
+def compute_precision_recall(gt_boxes, pred_boxes, iou_threshold=0.5):
+    # This function assumes that the predicted boxes are sorted by confidence score in descending order
+    TPs = np.zeros(len(pred_boxes))
+    FPs = np.zeros(len(pred_boxes))
+
+    for i, pbox in enumerate(pred_boxes):
+        max_iou = max([bbox_iou(pbox, gt_box) for gt_box in gt_boxes])
+
+        if max_iou > iou_threshold:
+            TPs[i] = 1
+        else:
+            FPs[i] = 1
+
+    TP_cumsum = np.cumsum(TPs)
+    FP_cumsum = np.cumsum(FPs)
+
+    recalls = TP_cumsum / len(gt_boxes)
+    precisions = TP_cumsum / (TP_cumsum + FP_cumsum)
+
+    return precisions, recalls
+
+
+def compute_average_precision(precisions, recalls):
+    # Convert precision and recall lists into arrays
+    precisions = np.array(precisions)
+    recalls = np.array(recalls)
+
+    # Add a starting point and an end point for recall
+    all_recalls = np.concatenate(([0.], recalls, [1.]))
+    all_precisions = np.concatenate(([0.], precisions, [0.]))
+
+    # Compute the precision envelope
+    for i in range(all_precisions.size - 1, 0, -1):
+        all_precisions[i -
+                       1] = np.maximum(all_precisions[i - 1], all_precisions[i])
+
+    # Integrate the area under the curve
+    indices = np.where(all_recalls[1:] != all_recalls[:-1])[0]
+    AP = np.sum((all_recalls[indices + 1] -
+                all_recalls[indices]) * all_precisions[indices + 1])
+
+    return AP
+
+# Main function to compute mAP
+
+
+def compute_map(gt_boxes_list, pred_boxes_list):
+    APs = []
+
+    for gt_boxes, pred_boxes in zip(gt_boxes_list, pred_boxes_list):
+        precisions, recalls = compute_precision_recall(gt_boxes, pred_boxes)
+        AP = compute_average_precision(precisions, recalls)
+        APs.append(AP)
+
+    return np.mean(APs)
+
+
+# Usage
