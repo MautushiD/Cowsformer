@@ -19,12 +19,14 @@ from ultralytics import NAS
 import re
 import pandas as pd
 import matplotlib.pyplot as plt
+import torch.nn as nn
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 class Niche_YOLO_NAS:
     def __init__(self, path_model, dir_train, dir_val, name_task):
+        super(Niche_YOLO_NAS, self).__init__()
         self.name_task = name_task
         self.path_model = path_model
         self.dir_train = dir_train
@@ -205,7 +207,15 @@ class Niche_YOLO_NAS:
         plt.legend()
         plt.show()
         
+    def forward(self, x):
+            return self.model(x)  # Forward pass should use the internal model
 
+    # Ensure that other calls like eval() and train() go to the internal model:
+    def eval(self):
+        return self.model.eval()
+
+    def train(self, mode=True):
+        return self.model.train(mode)
 '''
 def extract_metrics(log_line):
     regex_pattern = r"Epoch (\d+) \(\d+\/\d+\)\s+-.*Valid_PPYoloELoss/loss: (.*?)\s+Valid_Precision@0.50: (.*?)\s+Valid_Recall@0.50: (.*?)\s+Valid_mAP@0.50: (.*?)\s+Valid_F1@0.50: (.*?)\s+"
@@ -252,3 +262,4 @@ def extract_metrics(log_line):
             "F1@0.50": F1,
         }
     return None
+

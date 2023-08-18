@@ -12,6 +12,8 @@ from super_gradients.training.dataloaders.dataloaders import (
     coco_detection_yolo_format_val,
 )
 import cv2
+import torch
+from torchvision import transforms
 
 
 dataset_params = {
@@ -236,16 +238,16 @@ def get_boxex_for_all_models(
     prediction_dict["Default_YoloNas_boxes"] = default_model_boxes
     prediction_dict["Finetuned_YoloNas_boxes"] = finetuned_model_boxes
     
-    default_boxes = []
-    finetuned_boxes = []
-    gt_boxes = []
+    #default_boxes = []
+    #finetuned_boxes = []
+    #gt_boxes = []
 
     # Construct and return the prediction dictionary
-    prediction_dict = {
-        "Default_YoloNas_boxes": default_boxes,
-        "Finetuned_YoloNas_boxes": finetuned_boxes,
-        "Ground_Truth_boxes": gt_boxes
-    }
+    #prediction_dict = {
+     #   "Default_YoloNas_boxes": default_boxes,
+      #  "Finetuned_YoloNas_boxes": finetuned_boxes,
+       # "Ground_Truth_boxes": gt_boxes
+    #}
 
     return prediction_dict
 
@@ -301,67 +303,162 @@ def compute_iou_for_all_models(prediction_dict):
     iou_dict["image"] = image_name
     iou_dict["IOU_with_default_YoloNAS"] = final_iou_default
     iou_dict["IOU_with_finetuned_YoloNAS"] = final_iou_finetuned
-
+    iou_dict["Predicted_boxes_with_finetuned_YoloNAS"] = final_pbb_finetuned
+    iou_dict["Predicted_boxes_with_default_YoloNAS"] = final_pbb_default
+    
     return iou_dict
 
 ################
+'''
+def parse_label_file(label_path):
+    """
+    Parses a YOLO format label file.
+    Args:
+    - label_path: Path to the label file
+    Returns:
+    - A list of bounding boxes. Each bounding box is represented as a dictionary.
+    """
+    boxes = []
+    with open(label_path, 'r') as file:
+        lines = file.readlines()
+        for line in lines:
+            elements = line.strip().split()
+            cls, x_center, y_center, width, height = map(float, elements)
+            box = {
+                'class': cls,
+                'x_center': x_center,
+                'y_center': y_center,
+                'width': width,
+                'height': height
+            }
+            boxes.append(box)
+    return boxes
 
 
-def compute_precision_recall(gt_boxes, pred_boxes, iou_threshold=0.5):
-    # This function assumes that the predicted boxes are sorted by confidence score in descending order
-    TPs = np.zeros(len(pred_boxes))
-    FPs = np.zeros(len(pred_boxes))
+def compute_AP_for_image(iou_list, iou_threshold=0.5):
+    # Sorting the predictions based on confidence might be required,
+    # but assuming you've already done this when you call model.predict
+    true_positives = np.array(
+        [1 if iou >= iou_threshold else 0 for iou in iou_list])
+    false_positives = 1 - true_positives
 
-    for i, pbox in enumerate(pred_boxes):
-        max_iou = max([bbox_iou(pbox, gt_box) for gt_box in gt_boxes])
+    # Compute the cumulative sums
+    tp_cumsum = np.cumsum(true_positives)
+    fp_cumsum = np.cumsum(false_positives)
 
-        if max_iou > iou_threshold:
-            TPs[i] = 1
+    recalls = tp_cumsum / float(len(iou_list))
+    precisions = tp_cumsum / (tp_cumsum + fp_cumsum)
+
+    # Interpolation step: For each level of recall, find the max precision:
+    interpolated_precisions = []
+    for recall_level in np.linspace(0.0, 1.0, 100):
+        try:
+            args = np.where(recalls >= recall_level)[0]
+            interpolated_precisions.append(max(precisions[args]))
+        except:
+            interpolated_precisions.append(0.0)
+
+    average_precision = np.mean(interpolated_precisions)
+    return average_precision
+
+
+def read_label_file(label_file_path):
+    """
+    Reads a YOLOv5 label file and returns the ground truths.
+    """
+    with open(label_file_path, 'r') as file:
+        lines = file.readlines()
+    # Convert each line into a list [class_id, x_center, y_center, width, height]
+    boxes = [list(map(float, line.strip().split())) for line in lines]
+    return boxes
+
+
+def preprocess_image(image_path):
+    transform = transforms.Compose([
+        # Resize to the input size your model expects. Change if necessary.
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        # normalization based on ImageNet stats
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[
+                             0.229, 0.224, 0.225]),
+    ])
+
+    image = Image.open(image_path).convert('RGB')
+    return transform(image).unsqueeze(0)  # unsqueeze to add batch dimension
+
+def compute_mAP_for_test_data(model, images):
+    # Initialize the data
+    det_preds = []
+    det_gts = []
+
+    # Label directory
+    image_label_dir = "/Users/mautushid/github/Cowsformer/data/cow200/yolov5/test/labels"
+
+    for image in images:
+        tensor_image = preprocess_image(image)  # preprocess the image
+        with torch.no_grad():
+            preds = model(tensor_image)
+        det_preds.append(preds)
+
+        # Get the filename (without extension) of the current image
+        image_name = os.path.basename(image).rsplit('.', 1)[0]  # Extract the filename without extension
+        label_file = os.path.join(image_label_dir, f"{image_name}.txt")
+
+        # read and store the ground truths (based on your specific format)
+        gt = parse_label_file(label_file)
+        det_gts.append(gt)
+
+    mAP = calculate_mAP(det_preds, det_gts)
+    return mAP
+
+
+def some_mAP_computation_method(det_preds, gt_boxes):
+    # Placeholder for actual mAP computation
+    # This is a dummy value; in a real scenario, you'd compare predictions with ground truths
+    return 0.9
+'''
+def evaluate_predictions(prediction_dict, iou_threshold=0.5):
+    image_name = prediction_dict["image"]
+    gt_boxes = prediction_dict["Ground_Truth_boxes"]
+    defalt_yoloNas_boxes = prediction_dict["Default_YoloNas_boxes"]
+    finetuned_yoloNas_boxes = prediction_dict["Finetuned_YoloNas_boxes"]
+
+    TP_default = 0
+    FN_default = 0
+    FP_default = len(defalt_yoloNas_boxes)
+
+    TP_finetuned = 0
+    FN_finetuned = 0
+    FP_finetuned = len(finetuned_yoloNas_boxes)
+
+    for gt_box in gt_boxes:
+        # Default Model
+        ious_default = [bbox_iou(gt_box, pred_box) for pred_box in defalt_yoloNas_boxes]
+        if ious_default and max(ious_default) >= iou_threshold:
+            TP_default += 1
+            FP_default -= 1  # Remove false positive since this prediction is true
         else:
-            FPs[i] = 1
+            FN_default += 1
 
-    TP_cumsum = np.cumsum(TPs)
-    FP_cumsum = np.cumsum(FPs)
+        # Finetuned Model
+        ious_finetuned = [bbox_iou(gt_box, pred_box) for pred_box in finetuned_yoloNas_boxes]
+        if ious_finetuned and max(ious_finetuned) >= iou_threshold:
+            TP_finetuned += 1
+            FP_finetuned -= 1
+        else:
+            FN_finetuned += 1
 
-    recalls = TP_cumsum / len(gt_boxes)
-    precisions = TP_cumsum / (TP_cumsum + FP_cumsum)
+    # Calculate precision and recall for both models
+    precision_default = TP_default / (TP_default + FP_default) if TP_default + FP_default != 0 else 0
+    recall_default = TP_default / (TP_default + FN_default) if TP_default + FN_default != 0 else 0
 
-    return precisions, recalls
+    precision_finetuned = TP_finetuned / (TP_finetuned + FP_finetuned) if TP_finetuned + FP_finetuned != 0 else 0
+    recall_finetuned = TP_finetuned / (TP_finetuned + FN_finetuned) if TP_finetuned + FN_finetuned != 0 else 0
 
-
-def compute_average_precision(precisions, recalls):
-    # Convert precision and recall lists into arrays
-    precisions = np.array(precisions)
-    recalls = np.array(recalls)
-
-    # Add a starting point and an end point for recall
-    all_recalls = np.concatenate(([0.], recalls, [1.]))
-    all_precisions = np.concatenate(([0.], precisions, [0.]))
-
-    # Compute the precision envelope
-    for i in range(all_precisions.size - 1, 0, -1):
-        all_precisions[i -
-                       1] = np.maximum(all_precisions[i - 1], all_precisions[i])
-
-    # Integrate the area under the curve
-    indices = np.where(all_recalls[1:] != all_recalls[:-1])[0]
-    AP = np.sum((all_recalls[indices + 1] -
-                all_recalls[indices]) * all_precisions[indices + 1])
-
-    return AP
-
-# Main function to compute mAP
-
-
-def compute_map(gt_boxes_list, pred_boxes_list):
-    APs = []
-
-    for gt_boxes, pred_boxes in zip(gt_boxes_list, pred_boxes_list):
-        precisions, recalls = compute_precision_recall(gt_boxes, pred_boxes)
-        AP = compute_average_precision(precisions, recalls)
-        APs.append(AP)
-
-    return np.mean(APs)
-
-
-# Usage
+    return {
+        "image": image_name,
+        "precision_default": precision_default,
+        "recall_default": recall_default,
+        "precision_finetuned": precision_finetuned,
+        "recall_finetuned": recall_finetuned
+    }
