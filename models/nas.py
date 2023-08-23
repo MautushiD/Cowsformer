@@ -165,7 +165,22 @@ class Niche_YOLO_NAS:
         # load the best model and evaluate the model on the test split
         # use trainer.test() function to eavalute the model on the split
         #self.trainer.get(///
-        
+        self.trainer.test(
+            model=best_model,
+            test_loader=test_data,
+            test_metrics_list=DetectionMetrics_050(
+            core_thres=0.1,
+            top_k_predictions=300,
+            num_cls=len(dataset_params['classes']),
+            normalize_targets=True,
+            post_prediction_callback=PPYoloEPostPredictionCallback(
+                score_threshold=0.01,
+                nms_top_k=1000,
+                max_predictions=300,
+                nms_threshold=0.7
+        )
+    )
+)
         #metrics = self.trainer.test(model=self.model, test_loader=self.test_data_loder)
         #results = self.trainer.test(model=self.model, test_loader=self.test_data_loder)
 
