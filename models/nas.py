@@ -25,12 +25,13 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 class Niche_YOLO_NAS:
-    def __init__(self, path_model, dir_train, dir_val, name_task):
+    def __init__(self, path_model, dir_train, dir_val, dir_test, name_task):
         super(Niche_YOLO_NAS, self).__init__()
         self.name_task = name_task
         self.path_model = path_model
         self.dir_train = dir_train
         self.dir_val = dir_val
+        self.dir_test = dir_test
         self.model = get_model(path_model, pretrained_weights="coco").to(DEVICE)
         self.trainer = Trainer(experiment_name=name_task)
         self.train_data = None
@@ -75,7 +76,7 @@ class Niche_YOLO_NAS:
         )
 
         # TODO: add test data
-        #self.test_data = ///
+        
         self.test_data = coco_detection_yolo_format_val(
             dataset_params={
                 "data_dir": os.path.dirname(path_val_txt),
@@ -159,6 +160,42 @@ class Niche_YOLO_NAS:
             dataloader_params={"batch_size": batch_size, "num_workers": 2},
         )
         return data
+    
+    def evaluate_trained_model(self, best_model, dataset_params):
+        """
+        Evaluates a trained model on test data.
+
+        Parameters:
+        - best_model: The trained model to be evaluated.
+        - dataset_params: Dictionary containing dataset parameters (like 'classes').
+
+        Returns:
+        - The results of the test evaluation.
+        """
+
+        test_metrics_list = DetectionMetrics_050(
+            score_thres=0.1,
+            top_k_predictions=300,
+            num_cls=len(dataset_params['classes']),
+            normalize_targets=True,
+            post_prediction_callback=PPYoloEPostPredictionCallback(
+                score_threshold=0.01,
+                nms_top_k=1000,
+                max_predictions=300,
+                nms_threshold=0.7
+            )
+        )
+
+        return self.trainer.test(
+            model=best_model,
+            # Assuming you want to use the test_data from the class instance
+            test_loader=self.test_data,
+            test_metrics_list=test_metrics_list
+        )
+
+
+# Usage:
+# results = evaluate_trained_model(trainer_instance, best_model, test_data, dataset_params)
 
     def evaluate(self, log_file_txt):
         # TODO: add test data
@@ -177,10 +214,8 @@ class Niche_YOLO_NAS:
                 score_threshold=0.01,
                 nms_top_k=1000,
                 max_predictions=300,
-                nms_threshold=0.7
-        )
-    )
-)
+                nms_threshold=0.7)))
+
         #metrics = self.trainer.test(model=self.model, test_loader=self.test_data_loder)
         #results = self.trainer.test(model=self.model, test_loader=self.test_data_loder)
 
@@ -231,27 +266,6 @@ class Niche_YOLO_NAS:
 
     def train(self, mode=True):
         return self.model.train(mode)
-'''
-def extract_metrics(log_line):
-    regex_pattern = r"Epoch (\d+) \(\d+\/\d+\)\s+-.*Valid_PPYoloELoss/loss: (.*?)\s+Valid_Precision@0.50: (.*?)\s+Valid_Recall@0.50: (.*?)\s+Valid_mAP@0.50: (.*?)\s+Valid_F1@0.50: (.*?)\s+"
-
-    match = re.search(regex_pattern, log_line)
-    if match:
-        epoch = int(match.group(1))
-        loss = float(match.group(2))
-        precision = float(match.group(3))
-        recall = float(match.group(4))
-        mAP50 = float(match.group(5))
-        F1 = float(match.group(6))
-        return {
-            "epoch": epoch,
-            "loss": loss,
-            "precision@0.50": precision,
-            "recall@0.50": recall,
-            "mAP@0.50": mAP50,
-            "F1@0.50": F1,
-        }
-'''
 
 
 def extract_metrics(log_line):
