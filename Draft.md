@@ -10,7 +10,7 @@ Our study specifically focuses on optimizing training processes and identifying 
 
 ## References:
 
-[1] Andrea Pretto a,*, Gianpaolo Savio a, Flaviana Gottardo b, Francesca Uccheddu c, Gianmaria Concheri a a Department of Civil, Environmental and Architectural Engineering, University of Padua, Italy for A novel low-cost visual ear tag based identification system for precision beef cattle livestock farming. 2022. , https://doi.org/10.1016/j.inpa.2022.10.003
-[2] Jan-Hendrik Witte, Jorge Marx Gom ́ ez for Introducing a New Workflow for Pig Posture Classification Based on a Combination of YOLO and EfficientNet. 2022.
-[3] Yongliang Qiao⁎, Matthew Truman, Salah Sukkarieh for Cattle segmentation and contour extraction based on Mask R-CNN for precision livestock farming. 2019.
-[4] Muhammad Hussain for YOLO-v1 to YOLO-v8, the Rise of YOLO and Its Complementary Nature toward Digital Manufacturing and Industrial Defect Detection. 2023 , https://doi.org/10.3390/machines11070677
+[1] Andrea Pretto a,*, Gianpaolo Savio a, Flaviana Gottardo b, Francesca Uccheddu c, Gianmaria Concheri a a Department of Civil, Environmental and Architectural Engineering, University of Padua, Italy for A novel low-cost visual ear tag based identification system for precision beef cattle livestock farming. 2022. , https://doi.org/10.1016/j.inpa.2022.10.003 <br>
+[2] Jan-Hendrik Witte, Jorge Marx Gom ́ ez for Introducing a New Workflow for Pig Posture Classification Based on a Combination of YOLO and EfficientNet. 2022. <br>
+[3] Yongliang Qiao⁎, Matthew Truman, Salah Sukkarieh for Cattle segmentation and contour extraction based on Mask R-CNN for precision livestock farming. 2019. <br>
+[4] Muhammad Hussain for YOLO-v1 to YOLO-v8, the Rise of YOLO and Its Complementary Nature toward Digital Manufacturing and Industrial Defect Detection. 2023 , https://doi.org/10.3390/machines11070677 <br>
