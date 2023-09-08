@@ -8,7 +8,8 @@ My research delves into exploring the potential of models such as DETR, YoloNAS 
 Our study specifically focuses on optimizing training processes and identifying the data batches that can maintain accuracy, a move that could reshape the norms of dataset requirements.
 
 
-##References:
+## References:
+
 [1] Andrea Pretto a,*, Gianpaolo Savio a, Flaviana Gottardo b, Francesca Uccheddu c, Gianmaria Concheri a a Department of Civil, Environmental and Architectural Engineering, University of Padua, Italy for A novel low-cost visual ear tag based identification system for precision beef cattle livestock farming. 2022. , https://doi.org/10.1016/j.inpa.2022.10.003
 [2] Jan-Hendrik Witte, Jorge Marx Gom ́ ez for Introducing a New Workflow for Pig Posture Classification Based on a Combination of YOLO and EfficientNet. 2022.
 [3] Yongliang Qiao⁎, Matthew Truman, Salah Sukkarieh for Cattle segmentation and contour extraction based on Mask R-CNN for precision livestock farming. 2019.
