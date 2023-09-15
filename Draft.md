@@ -15,10 +15,6 @@ In studies conducted in the field of animal science researchers have been using 
 
 Recent advancements in object detection have seen transformers, like those used for language tasks, being applied with great success. A standout example is the DEtection TRansformer (DETR) introduced by [Nicolas Carion?, Francisco Massa?, Gabriel Synnaeve, Nicolas Usunier, Alexander Kirillov, and Sergey Zagoruyko, 2020]. This model simplifies the object detection process, getting rid of many of the traditional steps, and performs as well as older, well-known models. Building on this, Dynamic DETR makes the process even more efficient, reducing the time it takes to train the model and improving its accuracy [Xiyang Dai Yinpeng Chen Jianwei Yang Pengchuan Zhang Lu Yuan Lei Zhang,2021 ]. These models have been used to detect objects in images of people, cars, and other common objects. However, they have not yet been applied to the field of animal science. Our research aims to explore the potential of these models in the context of livestock recognition tasks.
 
-    - Dr. Dorea's study (2-3 sentences)
-    - YOLO models / Mask RCNN in animal science
-    - Transformer is great but rare, list two work outside of animal science
-
 In this study, we present a systematic benchmarking study that addresses the concerns and provides a guidence for researchers, regardless of their expertise, to implement object detection in livestock production studies. Specifically, we aims to discuss three major perspectives of the implementation:
 - (1) How many training samples are required to achieve a certain accuracy?
 - (2) How much computational resources are required to implement the object detection?
@@ -26,6 +22,13 @@ In this study, we present a systematic benchmarking study that addresses the con
 We will validate each goal by using state of the art object detection models, including YOLOv8, YOLONAS, Mask R-CNN, and transformer-based model DETR, with their variants that have different model sizes. For benchmarking the performance in tranferability, we collected image datasets of dairy cows and ensured the variation of the lighting environment (i.e., day and night), camera angles (i.e., top-down and side-view), and even the breeds (i.e., Holstein and Jersey). We will also discuss the trade-off between the accuracy and the computational resources. With this guidence, researchers who want to implemenet the object detection can have better management of their research resources and efforts.
 
 ## Methods and Materials
+
+##  Data Collection:
+Our data collection was primarily conducted at Kentland Farm, Virginia Tech. Utilizing two Amazon Ring cameras, we adopted a dual-view approach: one camera was set up for top views while the other was aimed for side views. Our collection comprised approximately N videos (the exact number to be inserted), with our sampling strategy designed to extract one frame every second. Recognizing the crucial role of lighting in data quality, we strategically gathered data during various times of the day: morning, noon, evening, and night. This helped ensure diversity and richness in our dataset. In the span of our data collection, the farm, which houses over 200 cows of both Jersey and Holstein breeds, served as an apt setting for comprehensive data representation.
+
+## Data Preparation:
+For the purpose of labeling our dataset, we employed Roboflow, a platform that facilitated the bounding box annotations. Roboflow was particularly beneficial as it allowed us to obtain our data in two prominent formats: COCO and YOLOv5. As for the images extracted, they were consistently saved in the JPG format, ensuring uniformity in our data representation.
+
 
 (last, year)
 
