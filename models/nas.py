@@ -3,7 +3,9 @@ from super_gradients.training import Trainer, models
 from super_gradients.training.models import get as get_model
 from super_gradients.training.losses import PPYoloELoss
 from super_gradients.training.metrics import DetectionMetrics_050
-from super_gradients.training.models.detection_models.pp_yolo_e import PPYoloEPostPredictionCallback
+from super_gradients.training.models.detection_models.pp_yolo_e import (
+    PPYoloEPostPredictionCallback,
+)
 from super_gradients.training.dataloaders.dataloaders import (
     coco_detection_yolo_format_train,
     coco_detection_yolo_format_val,
@@ -40,13 +42,13 @@ class Niche_YOLO_NAS:
         self.val_data = None
         self.test_data = None
 
-    def load(self,path_model=None):
+    def load(self, path_model=None):
         # self.model = YOLO(path_model)
         if path_model is None:
             self.model = NAS("yolo_nas_l")  # NAS(path_model)
         else:
             self.model = models.get(
-                "yolo_nas_l", num_classes = 80, checkpoint_path=path_model
+                "yolo_nas_l", num_classes=80, checkpoint_path=path_model
             )
         print("model %s loaded" % path_model)
         return self.model
@@ -78,7 +80,7 @@ class Niche_YOLO_NAS:
             dataloader_params={"batch_size": batch_size, "num_workers": 2},
         )
         ##############################
-        
+
         train_params = {
             "silent_mode": False,
             "average_best_models": True,
@@ -124,18 +126,16 @@ class Niche_YOLO_NAS:
 
         ### best_model_path = os.path.join(self.dir_train, self.name_task, "ckpt_best.pth")
         ### self.load(best_model_path)
-        
-        # TODO: use get function to load the best model 
+
+        # TODO: use get function to load the best model
         # reference: https://docs.deci.ai/super-gradients/documentation/source/QuickstartBasicToolkit.html
-        #self.model = get_model(////
-        
+        # self.model = get_model(////
+
         ### self.model = get_model("yolo_nas_l", num_classes=num_classes, checkpoint_path=best_model_path)
-        
+
         #########################################
 
-
-    
-    def evaluate_trained_model(self, best_model, data_yaml_path, data_type = 'test'):
+    def evaluate_trained_model(self, best_model, data_yaml_path, data_type="test"):
         """
         Evaluates a trained model on test data.
 
@@ -150,7 +150,7 @@ class Niche_YOLO_NAS:
             yaml_content = yaml.safe_load(f)
         num_classes = yaml_content["nc"]
         # print('num_classes', num_classes)
-        if data_type == 'test' :
+        if data_type == "test":
             data_path_txt = self.dir_test
             data = coco_detection_yolo_format_val(
                 dataset_params={
@@ -161,7 +161,7 @@ class Niche_YOLO_NAS:
                 },
                 dataloader_params={"batch_size": 16, "num_workers": 2},
             )
-        elif data_type == 'train':
+        elif data_type == "train":
             data_path_txt = self.dir_train
             data = coco_detection_yolo_format_train(
                 dataset_params={
@@ -175,7 +175,7 @@ class Niche_YOLO_NAS:
                 },
                 dataloader_params={"batch_size": 16, "num_workers": 2},
             )
-        elif data_type == 'val':
+        elif data_type == "val":
             data_path_txt = self.dir_val
             data = coco_detection_yolo_format_val(
                 dataset_params={
@@ -187,8 +187,7 @@ class Niche_YOLO_NAS:
                 dataloader_params={"batch_size": 16, "num_workers": 2},
             )
         else:
-            print('data_type is not valid')
-        
+            print("data_type is not valid")
 
         test_metrics_list = DetectionMetrics_050(
             score_thres=0.1,
@@ -199,70 +198,71 @@ class Niche_YOLO_NAS:
                 score_threshold=0.01,
                 nms_top_k=1000,
                 max_predictions=300,
-                nms_threshold=0.7
-            )
+                nms_threshold=0.7,
+            ),
         )
-        
 
         return self.trainer.test(
             model=best_model,
             # Assuming you want to use the test_data from the class instance
-            test_loader = data,
-            test_metrics_list = test_metrics_list
+            test_loader=data,
+            test_metrics_list=test_metrics_list,
         )
-        
-    def get_evaluation_matrix(self, best_model, data_yaml_path, data_type='test', conf=0.5, plot=True):
-        
-        
-        if data_type == 'test' :
+
+    def get_evaluation_matrix(
+        self, best_model, data_yaml_path, data_type="test", conf=0.5, plot=True
+    ):
+        if data_type == "test":
             data_dir = self.dir_test
-        elif data_type == 'train':
+        elif data_type == "train":
             data_dir = self.dir_train
-        elif data_type == 'val':
+        elif data_type == "val":
             data_dir = self.dir_val
-        ds = sv.DetectionDataset.from_yolo(images_directory_path=data_dir+"/images",annotations_directory_path=data_dir+"/labels",
-                                           data_yaml_path=data_yaml_path,force_masks=False)
-        
+        ds = sv.DetectionDataset.from_yolo(
+            images_directory_path=data_dir + "/images",
+            annotations_directory_path=data_dir + "/labels",
+            data_yaml_path=data_yaml_path,
+            force_masks=False,
+        )
+
         predictions = {}
         for image_name, image in ds.images.items():
             result = list(best_model.predict(image, conf=conf))[0]
             detections = sv.Detections(
                 xyxy=result.prediction.bboxes_xyxy,
                 confidence=result.prediction.confidence,
-                class_id=result.prediction.labels.astype(int))
+                class_id=result.prediction.labels.astype(int),
+            )
             predictions[image_name] = detections
-            
+
         keys = list(ds.images.keys())
         annotation_batches, prediction_batches = [], []
 
         for key in keys:
             annotation = ds.annotations[key]
-            annotation_batch = np.column_stack((
-            annotation.xyxy,
-            annotation.class_id
-            ))
+            annotation_batch = np.column_stack((annotation.xyxy, annotation.class_id))
             annotation_batches.append(annotation_batch)
 
             prediction = predictions[key]
-            prediction_batch = np.column_stack((
-                prediction.xyxy,
-                prediction.class_id,
-                prediction.confidence
-                ))
+            prediction_batch = np.column_stack(
+                (prediction.xyxy, prediction.class_id, prediction.confidence)
+            )
             prediction_batches.append(prediction_batch)
-           
+
         confusion_matrix = ConfusionMatrix.from_detections(
             true_batches=annotation_batches,
             detection_batches=prediction_batches,
             num_classes=len(ds.classes),
-            conf_threshold=conf
-            )
+            conf_threshold=conf,
+        )
         print("Confusion Matrix:", confusion_matrix.matrix)
-        
+
         ### computing mean average precision
-        mean_average_precision = MeanAveragePrecision.from_detections(true_batches=annotation_batches,
-                                                                      detection_batches=prediction_batches,
-                                                                      num_classes=len(ds.classes),)
+        mean_average_precision = MeanAveragePrecision.from_detections(
+            true_batches=annotation_batches,
+            detection_batches=prediction_batches,
+            num_classes=len(ds.classes),
+        )
         print("Mean Average Precision:", mean_average_precision.value)
         ### computing other metrices
         cm = confusion_matrix.matrix
@@ -293,11 +293,42 @@ class Niche_YOLO_NAS:
         print("Average Recall:", avg_recall)
 
         if plot:
-            confusion_matrix.plot(os.path.join(data_dir, "confusion_matrix.png"), class_names=ds.classes)
+            confusion_matrix.plot(
+                os.path.join(data_dir, "confusion_matrix.png"), class_names=ds.classes
+            )
         else:
             pass
-        
-        return confusion_matrix, mean_average_precision.value
-    
-   
 
+        return confusion_matrix, mean_average_precision.value
+
+
+def eval_detections_libA(predictions):
+    """_summary_
+
+    Parameters
+    ----------
+    predictions : the dictionary of predictions, which is the output of sv.Detections() fucntion. The dictionary keys are the filenames of images.
+
+    Outputs
+    ---
+    mAP50: 50% mAP
+    mAP5095: averaged mAP from 50% to 95% confidence
+    confusions: confusion matrix
+    """
+    pass
+
+
+def eval_detections_libB(predictions):
+    """_summary_
+
+    Parameters
+    ----------
+    predictions : the dictionary of predictions, which is the output of sv.Detections() fucntion. The dictionary keys are the filenames of images.
+
+    Outputs
+    ---
+    mAP50: 50% mAP
+    mAP5095: averaged mAP from 50% to 95% confidence
+    confusions: confusion matrix
+    """
+    pass
