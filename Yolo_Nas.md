@@ -31,7 +31,7 @@ This is the primary class that provides various methods for model operations:
 
 - get_evaluation_matrix: Gets the evaluation matrix (Confusion Matrix) for the trained model. Useful for visualizing and understanding the performance of the model on different classes.
 
-## How to usw:
+## How to use:
 
 ### Initialization: First, create an instance of Niche_YOLO_NAS class.
 niche_yolo_nas = Niche_YOLO_NAS(path_model, dir_train, dir_val, dir_test, name_task)
