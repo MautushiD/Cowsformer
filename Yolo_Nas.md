@@ -21,7 +21,7 @@ This script supports both CUDA and CPU modes. It automatically selects "cuda" if
 ## Class: Niche_YOLO_NAS
 This is the primary class that provides various methods for model operations:
 
-- **__init__**: Constructor to initialize directories, model path, and other necessary parameters.
+- ** __init__ **: Constructor to initialize directories, model path, and other necessary parameters.
 
 - **load**: Loads the model. By default, it loads a yolo_nas_l model. However, a custom path can be provided to load other models.
 
