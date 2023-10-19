@@ -124,16 +124,7 @@ class Niche_YOLO_NAS:
             valid_loader=self.val_data,
         )
 
-        ### best_model_path = os.path.join(self.dir_train, self.name_task, "ckpt_best.pth")
-        ### self.load(best_model_path)
-
-        # TODO: use get function to load the best model
-        # reference: https://docs.deci.ai/super-gradients/documentation/source/QuickstartBasicToolkit.html
-        # self.model = get_model(////
-
-        ### self.model = get_model("yolo_nas_l", num_classes=num_classes, checkpoint_path=best_model_path)
-
-        #########################################
+       
 
     def evaluate_trained_model(self, best_model, data_yaml_path, data_type="test"):
         """
@@ -190,25 +181,25 @@ class Niche_YOLO_NAS:
             print("data_type is not valid")
 
         test_metrics_list = DetectionMetrics_050(
-            score_thres=0.1,
+            score_thres=0.5,
             top_k_predictions=300,
             num_cls=len(list(range(num_classes))),
             normalize_targets=True,
             post_prediction_callback=PPYoloEPostPredictionCallback(
-                score_threshold=0.01,
+                score_threshold=0.5,
                 nms_top_k=1000,
                 max_predictions=300,
-                nms_threshold=0.7,
+                nms_threshold=0.5,
             ),
         )
 
         return self.trainer.test(
             model=best_model,
-            # Assuming you want to use the test_data from the class instance
             test_loader=data,
             test_metrics_list=test_metrics_list,
         )
-
+        
+        
     def get_evaluation_matrix(
         self, best_model, data_yaml_path, data_type="test", conf=0.5, plot=True
     ):
@@ -257,40 +248,7 @@ class Niche_YOLO_NAS:
         )
         print("Confusion Matrix:", confusion_matrix.matrix)
 
-        ### computing mean average precision
-        mean_average_precision = MeanAveragePrecision.from_detections(
-            true_batches=annotation_batches,
-            detection_batches=prediction_batches,
-            num_classes=len(ds.classes),
-        )
-        print("Mean Average Precision:", mean_average_precision.value)
-        ### computing other metrices
-        cm = confusion_matrix.matrix
-
-        precisions = []
-        recalls = []
-
-        num_classes = len(ds.classes)
-        for i in range(num_classes):
-            TP = cm[i, i]
-            FP = sum(cm[:, i]) - TP
-            FN = sum(cm[i, :]) - TP
-            TN = np.sum(cm) - (FP + FN + TP)
-
-            precision = TP / (TP + FP) if TP + FP != 0 else 0
-            recall = TP / (TP + FN) if TP + FN != 0 else 0
-
-            precisions.append(precision)
-            recalls.append(recall)
-
-        # If you want average precision and recall
-        avg_precision = sum(precisions) / num_classes
-        avg_recall = sum(recalls) / num_classes
-
-        print("Precision per class:", precisions[0])
-        print("Recall per class:", recalls[0])
-        print("Average Precision:", avg_precision)
-        print("Average Recall:", avg_recall)
+        
 
         if plot:
             confusion_matrix.plot(
@@ -299,36 +257,12 @@ class Niche_YOLO_NAS:
         else:
             pass
 
-        return confusion_matrix, mean_average_precision.value
-
-
-def eval_detections_libA(predictions):
-    """_summary_
-
-    Parameters
-    ----------
-    predictions : the dictionary of predictions, which is the output of sv.Detections() fucntion. The dictionary keys are the filenames of images.
-
-    Outputs
-    ---
-    mAP50: 50% mAP
-    mAP5095: averaged mAP from 50% to 95% confidence
-    confusions: confusion matrix
-    """
-    pass
-
-
-def eval_detections_libB(predictions):
-    """_summary_
-
-    Parameters
-    ----------
-    predictions : the dictionary of predictions, which is the output of sv.Detections() fucntion. The dictionary keys are the filenames of images.
-
-    Outputs
-    ---
-    mAP50: 50% mAP
-    mAP5095: averaged mAP from 50% to 95% confidence
-    confusions: confusion matrix
-    """
-    pass
+        return confusion_matrix     
+    
+    
+    
+    
+    
+    
+    
+    
