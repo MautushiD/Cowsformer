@@ -43,5 +43,8 @@ niche_yolo_nas.train(path_yaml, path_train_txt, path_val_txt, batch_size, num_ep
 ### Evaluation:
 evaluation_result = niche_yolo_nas.evaluate_trained_model(best_model, data_yaml_path, data_type="test")
 
+// Define the content of the outputs. If it is a dictionary, ellaborate the keys and their values.
+  - key1: int, the number of images in the dataset
+
 ### Get Evaluation Matrix:
 matrix = niche_yolo_nas.get_evaluation_matrix(best_model, data_yaml_path, data_type="test", conf=0.5, plot=True)
