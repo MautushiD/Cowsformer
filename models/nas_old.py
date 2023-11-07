@@ -2,7 +2,7 @@ from webbrowser import get
 from super_gradients.training import Trainer, models
 from super_gradients.training.models import get as get_model
 from super_gradients.training.losses import PPYoloELoss
-from super_gradients.training.metrics import DetectionMetrics_050, DetectionMetrics_050_095
+from super_gradients.training.metrics import DetectionMetrics_050
 from super_gradients.training.models.detection_models.pp_yolo_e import (
     PPYoloEPostPredictionCallback,
 )
@@ -46,14 +46,6 @@ class Niche_YOLO_NAS:
         # self.model = YOLO(path_model)
         if path_model is None:
             self.model = NAS("yolo_nas_l")  # NAS(path_model)
-        elif path_model == "yolo_nas_m":
-            self.model = models.get(
-                "yolo_nas_m", num_classes=80, checkpoint_path=path_model
-            )
-        elif path_model == "yolo_nas_s":
-            self.model = models.get(
-                "yolo_nas_s", num_classes=80, checkpoint_path=path_model
-            )
         else:
             self.model = models.get(
                 "yolo_nas_l", num_classes=80, checkpoint_path=path_model
@@ -108,15 +100,20 @@ class Niche_YOLO_NAS:
             "loss": PPYoloELoss(
                 use_static_assigner=False, num_classes=num_classes, reg_max=16
             ),
-            "valid_metrics_list": [DetectionMetrics_050(score_thres=0.1,
-                                                        top_k_predictions=300,
-                                                        num_cls=num_classes,
-                                                        normalize_targets=True,
-                                                        post_prediction_callback=PPYoloEPostPredictionCallback\
-                                                            (score_threshold=0.01,nms_top_k=1000,
-                                                             max_predictions=300,nms_threshold=0.7,)),
-                                   
-                                 ],
+            "valid_metrics_list": [
+                DetectionMetrics_050(
+                    score_thres=0.1,
+                    top_k_predictions=300,
+                    num_cls=num_classes,
+                    normalize_targets=True,
+                    post_prediction_callback=PPYoloEPostPredictionCallback(
+                        score_threshold=0.01,
+                        nms_top_k=1000,
+                        max_predictions=300,
+                        nms_threshold=0.7,
+                    ),
+                )
+            ],
             "metric_to_watch": "mAP@0.50",
         }
 
@@ -183,7 +180,7 @@ class Niche_YOLO_NAS:
         else:
             print("data_type is not valid")
 
-        test_metrics_list = [DetectionMetrics_050(
+        test_metrics_list = DetectionMetrics_050(
             score_thres=0.5,
             top_k_predictions=300,
             num_cls=len(list(range(num_classes))),
@@ -194,20 +191,7 @@ class Niche_YOLO_NAS:
                 max_predictions=300,
                 nms_threshold=0.5,
             ),
-        ),
-            DetectionMetrics_050_095(
-                score_thres=0.5,
-                top_k_predictions=300,
-                num_cls=len(list(range(num_classes))),
-                normalize_targets=True,
-                post_prediction_callback=PPYoloEPostPredictionCallback(
-                    score_threshold=0.5,
-                    nms_top_k=1000,
-                    max_predictions=300,
-                    nms_threshold=0.5,
-                ),
-            ),
-        ]
+        )
 
         return self.trainer.test(
             model=best_model,

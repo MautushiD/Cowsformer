@@ -17,7 +17,7 @@ DIR_COW200 = os.path.join(DIR_DATA, "cow200", "yolov5")
 
 # model configuration
 BATCH = 16
-EPOCHS = 2#100
+EPOCHS = 100
 
 
 def main(args):
