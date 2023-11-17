@@ -1,5 +1,5 @@
 ## This folder contains .sh files 
-#### trialnas.sh : https://github.com/MautushiD/Cowsformer/blob/main/sh_scripts/trialnas.sh
+#### trialnas.sh : [.sh file] (https://github.com/MautushiD/Cowsformer/blob/main/sh_scripts/trialnas.sh)
 This script is designed for batch processing using the SLURM workload manager on a high-performance computing (HPC) environment. It is specifically tailored for running a series of experiments with a Python script (trial_nas.py) under different configurations.
 ##### Description: 
 The script is a Shell script (#!/bin/sh) meant to be submitted as a job in an HPC environment. It utilizes various SLURM directives for resource allocation and job scheduling:
