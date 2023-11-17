@@ -37,6 +37,7 @@ Submit the script to the SLURM queue using sbatch [script_name].sh
 Description
 This is a Bash script (#!/bin/bash) intended for submission as a job in an HPC environment. It includes various SLURM directives for resource allocation:
 
+```bash
 -p dgx_normal_q: Specifies the partition for job submission.
 --account=niche_squad: Sets the account for job management and access control.
 --time=119:59:59: Allocates a maximum runtime of nearly 120 hours.
@@ -45,6 +46,7 @@ This is a Bash script (#!/bin/bash) intended for submission as a job in an HPC e
 --gres=gpu:1: Requests one GPU resource per node.
 --mem=32G: Allocates 32GB of memory for the job.
 --output and --error: Directs standard output and error messages to specified files.
+```
 The script configures the environment for a Python job:
 
 Loads necessary modules and the Anaconda3 environment.

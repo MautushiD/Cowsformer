@@ -15,6 +15,7 @@ This script provides a Python class, Niche_YOLO_NAS, which facilitates the train
 - re
 - pandas
 - matplotlib
+  
 ## Device Compatibility:
 This script supports both CUDA and CPU modes. It automatically selects "cuda" if available, otherwise, it falls back to CPU mode.
 
@@ -34,17 +35,25 @@ This is the primary class that provides various methods for model operations:
 ## How to use:
 
 ### Initialization: First, create an instance of Niche_YOLO_NAS class.
+```python
 niche_yolo_nas = Niche_YOLO_NAS(path_model, dir_train, dir_val, dir_test, name_task)
+```
 ### Training:
+```python
 niche_yolo_nas.train(path_yaml, path_train_txt, path_val_txt, batch_size, num_epochs)
+```
 
-(command I used) python trial_nas.py --iter 1 --n_train 200 --yolo_base yolo_nas_l --suffix trial1 here 200 is the number of images and yolo_nas_l
+(command I used) 
+```shell
+python trial_nas.py --iter 1 --n_train 200 --yolo_base yolo_nas_l --suffix trial1 here 200 is the number of images and yolo_nas_l
+```
 
 ### Evaluation:
 evaluation_result = niche_yolo_nas.evaluate_trained_model(best_model, data_yaml_path, data_type="test")
 
 
 ##### Output:
+```
 {'Precision@0.50': tensor(0.8883),  
  'Recall@0.50': tensor(0.9499),  
  'mAP@0.50': tensor(0.9343),  
@@ -53,7 +62,7 @@ evaluation_result = niche_yolo_nas.evaluate_trained_model(best_model, data_yaml_
  'Recall@0.50:0.95': tensor(0.7437),  
  'mAP@0.50:0.95': tensor(0.7102),  
  'F1@0.50:0.95': tensor(0.7188)}
-
+```
 ### Get Evaluation Matrix:
 matrix = niche_yolo_nas.get_evaluation_matrix(best_model, data_yaml_path, data_type="test", conf=0.5, plot=True)
 ##### Output:
