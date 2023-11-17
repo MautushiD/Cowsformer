@@ -1,4 +1,4 @@
-## Nas.py 
+## nas.py - [.py file](https://github.com/MautushiD/Cowsformer/blob/main/models/nas.py)
 This script provides a Python class, Niche_YOLO_NAS, which facilitates the training, evaluation, and prediction of models for object detection using YOLO format datasets. Below is a brief description of the functionality provided:
 
 ### Dependencies:
