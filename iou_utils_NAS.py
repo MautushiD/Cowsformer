@@ -202,52 +202,38 @@ def draw_boxes_all_models(image_path, prediction_dict):
     plt.show()
 
 
-def get_boxex_for_all_models(
-    image_path, image_label, default_model, finetuned_model, conf=0.6
-):
-    ### renaming image
-    # Split the string at the first occurrence of "_jpg"
-    split_name_0 = image_path.split("img_", 1)
-    # The split method returns a list, so you need to get the first element
-    image_name_0 = "img_" + split_name_0[1]
-    # Split the string at the first occurrence of "_jpg"
-    split_name = image_name_0.split("_jpg", 1)
-    # The split method returns a list, so you need to get the first element
+def get_boxex_for_all_models(image_path, image_label, default_model, finetuned_model, conf=0.6):
+    # Check if the filename starts with 'side_' or 'top_'
+    filename = os.path.basename(image_path)
+    if filename.startswith('side_'):
+        split_prefix = 'side_'
+    elif filename.startswith('top_'):
+        split_prefix = 'top_'
+    else:
+        split_prefix = ''  # or handle unknown prefix
+
+    # Rename the image based on the prefix
+    split_name_0 = image_path.split(split_prefix, 1)
+    image_name_0 = split_prefix + split_name_0[1] if split_name_0[1:] else 'unknown'
+    split_name = image_name_0.split('_jpg', 1)
     image_name = split_name[0]
 
-    ### get predictions
-    # in case of ground truth (no model prediction)
-    gt_image = Image.open(image_path)
-    # in case of default yolo_nas
-    predicted_image_default = default_model.predict(image_path, conf)
-    # in case of finetned yolo_nas
-    predicted_image_finetuned = finetuned_model.predict(image_path, conf)
+    # Get predictions
+    gt_image = Image.open(image_path)  # Ground truth (no model prediction)
+    predicted_image_default = default_model.predict(image_path, conf)  # Default YOLO NAS
+    predicted_image_finetuned = finetuned_model.predict(image_path, conf)  # Finetuned YOLO NAS
 
-    ### get bounding boxes
-    # in case of ground truth (no model prediction)
-    gt_boxes = cxcyxy_to_xyxy(image_label, image_path)
-    # in case of default yolo_nas
-    default_model_boxes = get_boxes_xyxy(default_model, image_path, conf)
-    # in case of finetned yolo_nas
-    finetuned_model_boxes = get_boxes_xyxy(finetuned_model, image_path, conf)
+    # Get bounding boxes
+    gt_boxes = cxcyxy_to_xyxy(image_label, image_path)  # Ground truth
+    default_model_boxes = get_boxes_xyxy(default_model, image_path, conf)  # Default YOLO NAS
+    finetuned_model_boxes = get_boxes_xyxy(finetuned_model, image_path, conf)  # Finetuned YOLO NAS
 
-    prediction_dict = {}
-
-    prediction_dict["image"] = image_name
-    prediction_dict["Ground_Truth_boxes"] = gt_boxes
-    prediction_dict["Default_YoloNas_boxes"] = default_model_boxes
-    prediction_dict["Finetuned_YoloNas_boxes"] = finetuned_model_boxes
-    
-    #default_boxes = []
-    #finetuned_boxes = []
-    #gt_boxes = []
-
-    # Construct and return the prediction dictionary
-    #prediction_dict = {
-     #   "Default_YoloNas_boxes": default_boxes,
-      #  "Finetuned_YoloNas_boxes": finetuned_boxes,
-       # "Ground_Truth_boxes": gt_boxes
-    #}
+    prediction_dict = {
+        "image": image_name,
+        "Ground_Truth_boxes": gt_boxes,
+        "Default_YoloNas_boxes": default_model_boxes,
+        "Finetuned_YoloNas_boxes": finetuned_model_boxes
+    }
 
     return prediction_dict
 
