@@ -2,7 +2,7 @@ from webbrowser import get
 from super_gradients.training import Trainer, models
 from super_gradients.training.models import get as get_model
 from super_gradients.training.losses import PPYoloELoss
-from super_gradients.training.metrics import DetectionMetrics_050
+from super_gradients.training.metrics import DetectionMetrics_050, DetectionMetrics_050_095
 from super_gradients.training.models.detection_models.pp_yolo_e import (
     PPYoloEPostPredictionCallback,
 )
@@ -24,12 +24,15 @@ import re
 import pandas as pd
 import matplotlib.pyplot as plt
 import torch.nn as nn
-
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
+
+
+    
+
 class Niche_YOLO_NAS:
-    def __init__(self, path_model, dir_train, dir_val, dir_test, name_task):
+    def __init__(self, model_type, path_model, dir_train, dir_val, dir_test, name_task):
         super(Niche_YOLO_NAS, self).__init__()
         self.name_task = name_task
         self.path_model = path_model
@@ -41,18 +44,28 @@ class Niche_YOLO_NAS:
         self.train_data = None
         self.val_data = None
         self.test_data = None
-
+        self.model_type = model_type
+        
+    '''
     def load(self, path_model=None):
         # self.model = YOLO(path_model)
         if path_model is None:
             self.model = NAS("yolo_nas_l")  # NAS(path_model)
+        elif path_model == "yolo_nas_m":
+            self.model = models.get(
+                "yolo_nas_m", num_classes=80, checkpoint_path=path_model
+            )
+        elif path_model == "yolo_nas_s":
+            self.model = models.get(
+                "yolo_nas_s", num_classes=80, checkpoint_path=path_model
+            )
         else:
             self.model = models.get(
                 "yolo_nas_l", num_classes=80, checkpoint_path=path_model
             )
         print("model %s loaded" % path_model)
         return self.model
-
+    '''
     def train(self, path_yaml, path_train_txt, path_val_txt, batch_size, num_epochs):
         with open(path_yaml, "r") as f:
             yaml_content = yaml.safe_load(f)
@@ -100,20 +113,15 @@ class Niche_YOLO_NAS:
             "loss": PPYoloELoss(
                 use_static_assigner=False, num_classes=num_classes, reg_max=16
             ),
-            "valid_metrics_list": [
-                DetectionMetrics_050(
-                    score_thres=0.1,
-                    top_k_predictions=300,
-                    num_cls=num_classes,
-                    normalize_targets=True,
-                    post_prediction_callback=PPYoloEPostPredictionCallback(
-                        score_threshold=0.01,
-                        nms_top_k=1000,
-                        max_predictions=300,
-                        nms_threshold=0.7,
-                    ),
-                )
-            ],
+            "valid_metrics_list": [DetectionMetrics_050(score_thres=0.1,
+                                                        top_k_predictions=300,
+                                                        num_cls=num_classes,
+                                                        normalize_targets=True,
+                                                        post_prediction_callback=PPYoloEPostPredictionCallback\
+                                                            (score_threshold=0.01,nms_top_k=1000,
+                                                             max_predictions=300,nms_threshold=0.7,)),
+                                   
+                                 ],
             "metric_to_watch": "mAP@0.50",
         }
 
@@ -124,8 +132,8 @@ class Niche_YOLO_NAS:
             valid_loader=self.val_data,
         )
 
-       
-
+    
+    '''
     def evaluate_trained_model(self, best_model, data_yaml_path, data_type="test"):
         """
         Evaluates a trained model on test data.
@@ -180,7 +188,7 @@ class Niche_YOLO_NAS:
         else:
             print("data_type is not valid")
 
-        test_metrics_list = DetectionMetrics_050(
+        test_metrics_list = [DetectionMetrics_050(
             score_thres=0.5,
             top_k_predictions=300,
             num_cls=len(list(range(num_classes))),
@@ -191,14 +199,27 @@ class Niche_YOLO_NAS:
                 max_predictions=300,
                 nms_threshold=0.5,
             ),
-        )
+        ),
+            DetectionMetrics_050_095(
+                score_thres=0.5,
+                top_k_predictions=300,
+                num_cls=len(list(range(num_classes))),
+                normalize_targets=True,
+                post_prediction_callback=PPYoloEPostPredictionCallback(
+                    score_threshold=0.5,
+                    nms_top_k=1000,
+                    max_predictions=300,
+                    nms_threshold=0.5,
+                ),
+            ),
+        ]
 
         return self.trainer.test(
             model=best_model,
             test_loader=data,
             test_metrics_list=test_metrics_list,
         )
-        
+     '''
         
     def get_evaluation_matrix(
         self, best_model, data_yaml_path, data_type="test", conf=0.5, plot=True
@@ -261,8 +282,135 @@ class Niche_YOLO_NAS:
     
     
     
+    def evaluate_trained_model(self, model_type, data_yaml_path, data_type="test"):
+        """
+        Evaluates a trained model on test data.
+
+        Parameters:
+        - model_type: Type of the model ('yolo_nas_l', 'yolo_nas_m', 'yolo_nas_s').
+        - data_yaml_path: Path to the YAML file containing dataset parameters.
+        - data_type: Type of the data to evaluate on ('test', 'train', 'val').
+
+        Returns:
+        - The results of the test evaluation.
+        """
+        # Load the model based on the model type
+        best_model = self.load(model_type)
+
+        with open(data_yaml_path, "r") as f:
+            yaml_content = yaml.safe_load(f)
+        num_classes = yaml_content["nc"]
+
+        # Data loading based on data_type
+        if data_type == "test":
+            data_path_txt = self.dir_test
+            data = coco_detection_yolo_format_val(
+                dataset_params={
+                    "data_dir": os.path.dirname(data_path_txt),
+                    "images_dir": "images",
+                    "labels_dir": "labels",
+                    "classes": list(range(num_classes)),
+                },
+                dataloader_params={"batch_size": 16, "num_workers": 2},
+            )
+        elif data_type == "train":
+            data_path_txt = self.dir_train
+            data = coco_detection_yolo_format_train(
+                dataset_params={
+                    "data_dir": os.path.dirname(data_path_txt),
+                    "images_dir": "images",
+                    "labels_dir": "labels",
+                    "classes": list(range(num_classes)),
+                },
+                dataloader_params={"batch_size": 16, "num_workers": 2},
+            )
+        elif data_type == "val":
+            data_path_txt = self.dir_val
+            data = coco_detection_yolo_format_val(
+                dataset_params={
+                    "data_dir": os.path.dirname(data_path_txt),
+                    "images_dir": "images",
+                    "labels_dir": "labels",
+                    "classes": list(range(num_classes)),
+                },
+                dataloader_params={"batch_size": 16, "num_workers": 2},
+            )
+        else:
+            raise ValueError("data_type is not valid")
+
+        # Setup test metrics list
+        test_metrics_list = [DetectionMetrics_050(
+            score_thres=0.5,
+            top_k_predictions=300,
+            num_cls=len(list(range(num_classes))),
+            normalize_targets=True,
+            post_prediction_callback=PPYoloEPostPredictionCallback(
+                score_threshold=0.5,
+                nms_top_k=1000,
+                max_predictions=300,
+                nms_threshold=0.5,
+            ),
+        ),
+        DetectionMetrics_050_095(
+            score_thres=0.5,
+            top_k_predictions=300,
+            num_cls=len(list(range(num_classes))),
+            normalize_targets=True,
+            post_prediction_callback=PPYoloEPostPredictionCallback(
+                score_threshold=0.5,
+                nms_top_k=1000,
+                max_predictions=300,
+                nms_threshold=0.5,
+            ),
+        )]
+
+        return self.trainer.test(
+            model=best_model,
+            test_loader=data,
+            test_metrics_list=test_metrics_list,
+        )
+
+    def load(self,checkpoint_path,model_type, path_model=None):
+        """
+    Load the model based on the specified type and checkpoint path.
+
+    Parameters:
+    - model_type: A string indicating the model type ('yolo_nas_l', 'yolo_nas_m', 'yolo_nas_s').
+    - checkpoint_path: Path to the saved checkpoint. If None, loads model without pretrained weights.
+
+    Returns:
+    - Loaded model.
+    """
+    # Specify the number of classes if needed
+    num_classes = 80  # Adjust this based on your dataset
+
+    if model_type == "yolo_nas_l":
+        self.model = get_model("yolo_nas_l", num_classes=num_classes)
+    elif model_type == "yolo_nas_m":
+        self.model = get_model("yolo_nas_m", num_classes=num_classes)
+    elif model_type == "yolo_nas_s":
+        self.model = get_model("yolo_nas_s", num_classes=num_classes)
+    else:
+        raise ValueError("Unknown model type: {}".format(model_type))
+
+    if checkpoint_path:
+        checkpoint = torch.load(checkpoint_path)
+        try:
+            self.model.load_state_dict(checkpoint['state_dict'])
+        except KeyError:
+            # If the state_dict is directly in the checkpoint
+            self.model.load_state_dict(checkpoint)
+        except RuntimeError as e:
+            print("RuntimeError while loading the model:", e)
+            print("Attempting to load model with non-strict state dict...")
+            self.model.load_state_dict(checkpoint, strict=False)
+
+    self.model.to(DEVICE)
+    print("model {} loaded".format(model_type))
+    return self.model
     
     
     
-    
+
+
     

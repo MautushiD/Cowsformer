@@ -29,19 +29,40 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 class Niche_YOLO_NAS:
-    def __init__(self, path_model, dir_train, dir_val, dir_test, name_task):
+    def __init__(self,  path_model, dir_train, dir_val, dir_test, name_task):
         super(Niche_YOLO_NAS, self).__init__()
         self.name_task = name_task
         self.path_model = path_model
         self.dir_train = dir_train
         self.dir_val = dir_val
         self.dir_test = dir_test
-        self.model = get_model(path_model, pretrained_weights="coco").to(DEVICE)
+        self.model = get_model(self.path_model, pretrained_weights="coco").to(DEVICE)
         self.trainer = Trainer(experiment_name=name_task)
         self.train_data = None
         self.val_data = None
         self.test_data = None
+        
+    def load(self, path_model=None, finetuned_chekpoint_path=None):
+        # self.model = YOLO(path_model)
+        if path_model is None:
+            self.model = NAS("yolo_nas_l")  # NAS(path_model)
+        elif path_model == "yolo_nas_m":
+            self.model = models.get(
+                "yolo_nas_m", num_classes=80, checkpoint_path=finetuned_chekpoint_path
+            )
+        elif path_model == "yolo_nas_s":
+            self.model = models.get(
+                "yolo_nas_s", num_classes=80, checkpoint_path=finetuned_chekpoint_path
+            )
+        else:
+            self.model = models.get(
+                "yolo_nas_l", num_classes=80, checkpoint_path=finetuned_chekpoint_path
+            )
+        print("model %s loaded" % path_model)
+        return self.model
+    ############
 
+    '''
     def load(self, path_model=None):
         # self.model = YOLO(path_model)
         if path_model is None:
@@ -60,7 +81,7 @@ class Niche_YOLO_NAS:
             )
         print("model %s loaded" % path_model)
         return self.model
-
+'''    
     def train(self, path_yaml, path_train_txt, path_val_txt, batch_size, num_epochs):
         with open(path_yaml, "r") as f:
             yaml_content = yaml.safe_load(f)
@@ -127,8 +148,8 @@ class Niche_YOLO_NAS:
             valid_loader=self.val_data,
         )
 
-       
-
+    
+    
     def evaluate_trained_model(self, best_model, data_yaml_path, data_type="test"):
         """
         Evaluates a trained model on test data.
@@ -214,7 +235,7 @@ class Niche_YOLO_NAS:
             test_loader=data,
             test_metrics_list=test_metrics_list,
         )
-        
+     
         
     def get_evaluation_matrix(
         self, best_model, data_yaml_path, data_type="test", conf=0.5, plot=True
@@ -274,9 +295,6 @@ class Niche_YOLO_NAS:
             pass
 
         return confusion_matrix     
-    
-    
-    
     
     
     
