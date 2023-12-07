@@ -90,8 +90,8 @@ class Niche_YOLO_NAS:
         self.train_data = coco_detection_yolo_format_train(
             dataset_params={
                 "data_dir": os.path.dirname(path_train_txt),
-                "images_dir": "images",  # os.path.join(os.path.split(path_train_txt)[0],'images'),
-                "labels_dir": "labels",  # os.path.join(os.path.split(path_train_txt)[0],'labels'),
+                "images_dir": "train/images",  # os.path.join(os.path.split(path_train_txt)[0],'images'),
+                "labels_dir": "train/labels",  # os.path.join(os.path.split(path_train_txt)[0],'labels'),
                 #'classes': num_classes
                 "classes": list(range(num_classes)),
             },
@@ -101,8 +101,8 @@ class Niche_YOLO_NAS:
         self.val_data = coco_detection_yolo_format_val(
             dataset_params={
                 "data_dir": os.path.dirname(path_val_txt),
-                "images_dir": "images",  # os.path.join(os.path.split(path_val_txt)[0],'images'),
-                "labels_dir": "labels",  # os.path.join(os.path.split(path_val_txt)[0], 'labels'),
+                "images_dir": "val/images",  # os.path.join(os.path.split(path_val_txt)[0],'images'),
+                "labels_dir": "val/labels",  # os.path.join(os.path.split(path_val_txt)[0], 'labels'),
                 #'classes': num_classes
                 "classes": list(range(num_classes)),
             },
@@ -163,16 +163,27 @@ class Niche_YOLO_NAS:
         """
         with open(data_yaml_path, "r") as f:
             yaml_content = yaml.safe_load(f)
-        num_classes = yaml_content["nc"]
-        # print('num_classes', num_classes)
+        class_ess = yaml_content["names"]
+        #print('num_classes', num_classes)
         if data_type == "test":
             data_path_txt = self.dir_test
             data = coco_detection_yolo_format_val(
                 dataset_params={
                     "data_dir": os.path.dirname(data_path_txt),
-                    "images_dir": "images",
-                    "labels_dir": "labels",
-                    "classes": list(range(num_classes)),
+                    "images_dir": "test/images",
+                    "labels_dir": "test/labels",
+                    "classes": class_ess,
+                },
+                dataloader_params={"batch_size": 16, "num_workers": 2},
+            )
+        elif data_type == "test_old":
+            data_path_txt = self.dir_test
+            data = coco_detection_yolo_format_val(
+                dataset_params={
+                    "data_dir": os.path.dirname(data_path_txt),
+                    "images_dir": "test_old/images",
+                    "labels_dir": "test_old/labels",
+                    "classes": class_ess,
                 },
                 dataloader_params={"batch_size": 16, "num_workers": 2},
             )
@@ -186,7 +197,7 @@ class Niche_YOLO_NAS:
                     # os.path.join(os.path.split(path_train_txt)[0],'labels'),
                     "labels_dir": "labels",
                     #'classes': num_classes
-                    "classes": list(range(num_classes)),
+                    "classes": class_ess,
                 },
                 dataloader_params={"batch_size": 16, "num_workers": 2},
             )
@@ -197,7 +208,7 @@ class Niche_YOLO_NAS:
                     "data_dir": os.path.dirname(data_path_txt),
                     "images_dir": "images",
                     "labels_dir": "labels",
-                    "classes": list(range(num_classes)),
+                    "classes": class_ess,
                 },
                 dataloader_params={"batch_size": 16, "num_workers": 2},
             )
@@ -207,7 +218,7 @@ class Niche_YOLO_NAS:
         test_metrics_list = [DetectionMetrics_050(
             score_thres=0.5,
             top_k_predictions=300,
-            num_cls=len(list(range(num_classes))),
+            num_cls=1,#len(list(range(num_classes))),
             normalize_targets=True,
             post_prediction_callback=PPYoloEPostPredictionCallback(
                 score_threshold=0.5,
@@ -219,7 +230,7 @@ class Niche_YOLO_NAS:
             DetectionMetrics_050_095(
                 score_thres=0.5,
                 top_k_predictions=300,
-                num_cls=len(list(range(num_classes))),
+                num_cls=1,#len(list(range(num_classes))),
                 normalize_targets=True,
                 post_prediction_callback=PPYoloEPostPredictionCallback(
                     score_threshold=0.5,
