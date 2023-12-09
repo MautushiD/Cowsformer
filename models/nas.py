@@ -308,6 +308,43 @@ class Niche_YOLO_NAS:
         return confusion_matrix     
     
     
-    
-    
+ ########################################################################
+    def get_map_scores(self, best_model, data_yaml_path, data_type="test"):
+        if data_type == "test":
+            data_dir = self.dir_test
+        elif data_type == "train":
+            data_dir = self.dir_train
+        elif data_type == "val":
+            data_dir = self.dir_val
+
+        ds = sv.DetectionDataset.from_yolo(
+            images_directory_path=data_dir + "/images",
+            annotations_directory_path=data_dir + "/labels",
+            data_yaml_path=data_yaml_path,
+            force_masks=False,
+        )
+
+        predictions = []
+        targets = []
+        for image_name, image in ds.images.items():
+            result = list(best_model.predict(image))[0]
+            detection_batch = np.column_stack(
+                (result.prediction.bboxes_xyxy, result.prediction.labels.astype(int), result.prediction.confidence)
+            )
+            predictions.append(detection_batch)
+
+            annotation = ds.annotations[image_name]
+            target_batch = np.column_stack((annotation.xyxy, annotation.class_id))
+            targets.append(target_batch)
+
+        mean_average_precision = sv.MeanAveragePrecision.from_tensors(
+            predictions=predictions,
+            targets=targets,
+        )
+
+        map50 = mean_average_precision.map50
+        map50_95 = mean_average_precision.map50_95
+
+        return {"mAP@50": map50, "mAP@50:95": map50_95}
+
     
