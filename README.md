@@ -94,7 +94,7 @@ This project utilizes the SODA 10M dataset, obtained from the SODA 2D official w
 - os
 - numpy
 - ultralytics
-- re
+- super_visiom
 - pandas
 - matplotlib
   
