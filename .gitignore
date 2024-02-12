@@ -42,6 +42,8 @@ __pycache__
 # folders
 slides/
 modules/
+old_checkpoints/
+checkpoints_breed/
 
 # exception
 !**/demo/**
