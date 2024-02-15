@@ -53,10 +53,10 @@ def save_predict_images_from_dir(model, image_dir, output_dir, conf=0.60, show=F
 def show_predicted_images_from_dir(model, image_dir, conf=0.60):
     # Get a list of all image files in the directory
     image_files = list(Path(image_dir).rglob("*.jpg"))
-
+    end = min(5, len(image_files))
     # Loop over all images and make predictions
     predictions = []
-    for image_file in image_files:
+    for image_file in image_files[2:end]:  # for image_file in image_files:
         # Load image
         img = Image.open(image_file)
 
@@ -84,7 +84,8 @@ def cxcyxy_to_xyxy(image_label_txt, image_path):
 
     boxes = []
     for line in lines:
-        class_id, x_center, y_center, width, height = map(float, line.strip().split())
+        class_id, x_center, y_center, width, height = map(
+            float, line.strip().split())
 
         # Convert to x_min, y_min, x_max, y_max format
         x_min = (x_center - width / 2) * image_width
@@ -98,12 +99,12 @@ def cxcyxy_to_xyxy(image_label_txt, image_path):
 
 
 def get_boxes_xyxy(model, image_path, conf=0.6):
-    ### Input:
+    # Input:
     # model : yolo_nas_l // best_model
     # image_path: 'pth/to/local/img_1.jpg'
     # conf = confidence
 
-    ### Output:
+    # Output:
     # all_boxes = list of list | coordinate of all bounding boxes
 
     results = model.predict(image_path, conf)
@@ -214,19 +215,24 @@ def get_boxex_for_all_models(image_path, image_label, default_model, finetuned_m
 
     # Rename the image based on the prefix
     split_name_0 = image_path.split(split_prefix, 1)
-    image_name_0 = split_prefix + split_name_0[1] if split_name_0[1:] else 'unknown'
+    image_name_0 = split_prefix + \
+        split_name_0[1] if split_name_0[1:] else 'unknown'
     split_name = image_name_0.split('_jpg', 1)
     image_name = split_name[0]
 
     # Get predictions
     gt_image = Image.open(image_path)  # Ground truth (no model prediction)
-    predicted_image_default = default_model.predict(image_path, conf)  # Default YOLO NAS
-    predicted_image_finetuned = finetuned_model.predict(image_path, conf)  # Finetuned YOLO NAS
+    predicted_image_default = default_model.predict(
+        image_path, conf)  # Default YOLO NAS
+    predicted_image_finetuned = finetuned_model.predict(
+        image_path, conf)  # Finetuned YOLO NAS
 
     # Get bounding boxes
     gt_boxes = cxcyxy_to_xyxy(image_label, image_path)  # Ground truth
-    default_model_boxes = get_boxes_xyxy(default_model, image_path, conf)  # Default YOLO NAS
-    finetuned_model_boxes = get_boxes_xyxy(finetuned_model, image_path, conf)  # Finetuned YOLO NAS
+    default_model_boxes = get_boxes_xyxy(
+        default_model, image_path, conf)  # Default YOLO NAS
+    finetuned_model_boxes = get_boxes_xyxy(
+        finetuned_model, image_path, conf)  # Finetuned YOLO NAS
 
     prediction_dict = {
         "image": image_name,
@@ -236,8 +242,6 @@ def get_boxex_for_all_models(image_path, image_label, default_model, finetuned_m
     }
 
     return prediction_dict
-
-
 
 
 def compute_iou_for_all_models(prediction_dict):
@@ -291,8 +295,9 @@ def compute_iou_for_all_models(prediction_dict):
     iou_dict["IOU_with_finetuned_YoloNAS"] = final_iou_finetuned
     iou_dict["Predicted_boxes_with_finetuned_YoloNAS"] = final_pbb_finetuned
     iou_dict["Predicted_boxes_with_default_YoloNAS"] = final_pbb_default
-    
+
     return iou_dict
+
 
 ################
 '''
@@ -403,6 +408,8 @@ def some_mAP_computation_method(det_preds, gt_boxes):
     # This is a dummy value; in a real scenario, you'd compare predictions with ground truths
     return 0.9
 '''
+
+
 def evaluate_predictions(prediction_dict, iou_threshold=0.5):
     image_name = prediction_dict["image"]
     gt_boxes = prediction_dict["Ground_Truth_boxes"]
@@ -419,7 +426,8 @@ def evaluate_predictions(prediction_dict, iou_threshold=0.5):
 
     for gt_box in gt_boxes:
         # Default Model
-        ious_default = [bbox_iou(gt_box, pred_box) for pred_box in defalt_yoloNas_boxes]
+        ious_default = [bbox_iou(gt_box, pred_box)
+                        for pred_box in defalt_yoloNas_boxes]
         if ious_default and max(ious_default) >= iou_threshold:
             TP_default += 1
             FP_default -= 1  # Remove false positive since this prediction is true
@@ -427,7 +435,8 @@ def evaluate_predictions(prediction_dict, iou_threshold=0.5):
             FN_default += 1
 
         # Finetuned Model
-        ious_finetuned = [bbox_iou(gt_box, pred_box) for pred_box in finetuned_yoloNas_boxes]
+        ious_finetuned = [bbox_iou(gt_box, pred_box)
+                          for pred_box in finetuned_yoloNas_boxes]
         if ious_finetuned and max(ious_finetuned) >= iou_threshold:
             TP_finetuned += 1
             FP_finetuned -= 1
@@ -435,11 +444,15 @@ def evaluate_predictions(prediction_dict, iou_threshold=0.5):
             FN_finetuned += 1
 
     # Calculate precision and recall for both models
-    precision_default = TP_default / (TP_default + FP_default) if TP_default + FP_default != 0 else 0
-    recall_default = TP_default / (TP_default + FN_default) if TP_default + FN_default != 0 else 0
+    precision_default = TP_default / \
+        (TP_default + FP_default) if TP_default + FP_default != 0 else 0
+    recall_default = TP_default / \
+        (TP_default + FN_default) if TP_default + FN_default != 0 else 0
 
-    precision_finetuned = TP_finetuned / (TP_finetuned + FP_finetuned) if TP_finetuned + FP_finetuned != 0 else 0
-    recall_finetuned = TP_finetuned / (TP_finetuned + FN_finetuned) if TP_finetuned + FN_finetuned != 0 else 0
+    precision_finetuned = TP_finetuned / \
+        (TP_finetuned + FP_finetuned) if TP_finetuned + FP_finetuned != 0 else 0
+    recall_finetuned = TP_finetuned / \
+        (TP_finetuned + FN_finetuned) if TP_finetuned + FN_finetuned != 0 else 0
 
     return {
         "image": image_name,
