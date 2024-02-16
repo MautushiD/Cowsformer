@@ -17,7 +17,7 @@ DIR_COW200 = os.path.join(DIR_DATA, "cow200", "yolov5")
 
 # model configuration
 BATCH = 16
-EPOCHS = 2  #100
+EPOCHS = 2  # 100
 
 
 def main(args):
@@ -31,9 +31,9 @@ def main(args):
     splitter = YOLO_Splitter(DIR_COW200, classes=["cow"], suffix=suffix)
     splitter.shuffle_train_val(n_included=n_train)
     path_data = splitter.write_dataset()
-    #print("----------------------------------------------------------------------------")
-    #print('path_data', path_data)
-    #print("----------------------------------------------------------------------------")
+    # print("----------------------------------------------------------------------------")
+    # print('path_data', path_data)
+    # print("----------------------------------------------------------------------------")
 
     # log
     print("----------------------------------------------------------------------------")
@@ -51,30 +51,29 @@ def main(args):
         dir_test=os.path.join(DIR_OUT, "test"),
         name_task=name_task
     )
-    
-    
-    
 
     # paths for the train and validation text files
     # os.path.join(DIR_COW200, 'train.txt')
     path_train_txt = os.path.join(os.path.split(path_data)[0], 'train.txt')
-    path_val_txt = os.path.join(os.path.split(path_data)[0], 'val.txt') #os.path.join(DIR_COW200, 'val.txt')
-    path_test_txt = os.path.join(os.path.split(path_data)[0], 'test.txt') #os.path.join(DIR_COW200, 'test.txt')
+    # os.path.join(DIR_COW200, 'val.txt')
+    path_val_txt = os.path.join(os.path.split(path_data)[0], 'val.txt')
+    # os.path.join(DIR_COW200, 'test.txt')
+    path_test_txt = os.path.join(os.path.split(path_data)[0], 'test.txt')
 
     print("----------------------------------------------------------------------------")
     print('path_train_txt', path_train_txt)
     print('path_val_txt', path_val_txt)
     print("----------------------------------------------------------------------------")
-    
+
     # path for the yaml file
-    path_yaml = os.path.join(os.path.split(path_data)[0], 'data.yaml') #os.path.join(DIR_COW200, 'data.yaml')
+    # os.path.join(DIR_COW200, 'data.yaml')
+    path_yaml = os.path.join(os.path.split(path_data)[0], 'data.yaml')
     print('path_yaml', path_yaml)
 
     # train
     yolo_nas.train(path_yaml, path_train_txt, path_val_txt, BATCH, EPOCHS)
 
-    # evaluate
-    yolo_nas.evaluate()
+
 
 
 if __name__ == "__main__":
