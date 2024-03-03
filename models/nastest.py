@@ -88,13 +88,13 @@ class Niche_YOLO_NAS:
         with open(path_yaml, "r") as f:
             yaml_content = yaml.safe_load(f)
         num_classes = yaml_content["nc"]
-        
-        print('train text on nas.py',os.path.dirname(path_train_txt))
+
+        print('train text on nas.py', os.path.dirname(path_train_txt))
         print('------------------------------------------------------------')
-        
+
         self.train_data = coco_detection_yolo_format_train(
             dataset_params={
-                #"data_dir": os.path.dirname(path_train_txt)+'/' + suffix+'_'+yolo_base+'_'+n_train+ '_'+iter,
+                # "data_dir": os.path.dirname(path_train_txt)+'/' + suffix+'_'+yolo_base+'_'+n_train+ '_'+iter,
                 "data_dir": os.path.dirname(path_train_txt),
                 # os.path.join(os.path.split(path_train_txt)[0],'images'),
                 "images_dir": "train/images",
@@ -313,11 +313,7 @@ class Niche_YOLO_NAS:
         return confusion_matrix
 
  ########################################################################
-<<<<<<< HEAD
 
-=======
-    '''
->>>>>>> 75d00b381e3a5fcb12b0505ee91bac59a8e8cc0a
     def get_map_scores(self, best_model, data_yaml_path, data_type="test"):
         if data_type == "test":
             data_dir = self.dir_test
@@ -337,8 +333,8 @@ class Niche_YOLO_NAS:
         targets = []
         for image_name, image in ds.images.items():
             result = best_model.predict(image)
-            #result = list(best_model.predict(image))[0]
-            #print(result)
+            # result = list(best_model.predict(image))[0]
+            # print(result)
             detection_batch = np.column_stack(
                 (result.prediction.bboxes_xyxy, result.prediction.labels.astype(
                     int), result.prediction.confidence)
@@ -359,67 +355,3 @@ class Niche_YOLO_NAS:
         map50_95 = mean_average_precision.map50_95
 
         return {"mAP@50": map50, "mAP@50:95": map50_95}
-<<<<<<< HEAD
-=======
-
-    '''  
-    def get_map_scores(self, best_model, data_yaml_path, data_type="test"):
-        if data_type == "test":
-            data_dir = self.dir_test
-        elif data_type == "train":
-            data_dir = self.dir_train
-        elif data_type == "val":
-            data_dir = self.dir_val
-        else:
-            # Handle unexpected data_type values
-            raise ValueError(f"Invalid data_type: {data_type}. Expected 'test', 'train', or 'val'.")
-
-        ds = sv.DetectionDataset.from_yolo(
-            images_directory_path=data_dir + "/images",
-            annotations_directory_path=data_dir + "/labels",
-            data_yaml_path=data_yaml_path,
-            force_masks=False,
-        )
-
-        predictions = []
-        targets = []
-        for image_name, image in ds.images.items():
-            result = list(best_model.predict(image))[0]
-            detection_batch = np.column_stack(
-                (result.prediction.bboxes_xyxy, result.prediction.labels.astype(int), result.prediction.confidence)
-            )
-            predictions.append(detection_batch)
-
-            annotation = ds.annotations[image_name]
-            target_batch = np.column_stack((annotation.xyxy, annotation.class_id))
-            targets.append(target_batch)
-
-        mean_average_precision = sv.MeanAveragePrecision.from_tensors(
-            predictions=predictions,
-            targets=targets,
-        )
-
-    # Placeholder for calculating additional metrics
-    # You need to implement the calculation based on your framework's capabilities or manually
-        precision = 0.0  # Implement calculation
-        recall = 0.0  # Implement calculation
-        f1 = 0.0  # Implement calculation if precision and recall are available
-        n_all = len(predictions)  # Total number of predictions
-        n_fn = 0  # Implement calculation for false negatives
-        n_fp = 0  # Implement calculation for false positives
-
-    # Update the F1 score calculation if precision and recall are non-zero
-        if precision + recall > 0:
-            f1 = 2 * (precision * recall) / (precision + recall)
-
-        return {
-            "map5095": mean_average_precision.map50_95,
-            "map50": mean_average_precision.map50,
-            "precision": precision,
-            "recall": recall,
-            "f1": f1,
-            "n_all": int(n_all),
-            "n_fn": int(n_fn),
-            "n_fp": int(n_fp),
-        }   
->>>>>>> 75d00b381e3a5fcb12b0505ee91bac59a8e8cc0a
