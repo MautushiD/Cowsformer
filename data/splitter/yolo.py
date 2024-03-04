@@ -101,13 +101,13 @@ class YOLO_Splitter(Splitter):
         self.id_train = id_remaining[:n_train]
         self.id_val = id_remaining[n_train : n_train + n_val]
         self.id_test = id_test
-
+    '''
     def write_dataset(self):
         self._write_yaml(classes=self.classes)
         for split in ["train", "val", "test"]:
             self._write_txt(split=split, ids=getattr(self, f"id_{split}"))
         return self.path_yaml
-        
+    '''    
     def _write_yaml(self, classes: list):
         self.config.write(
             f"""
@@ -120,13 +120,47 @@ class YOLO_Splitter(Splitter):
             """
         )
         self.config.close()
-    
+    '''
     def _write_txt(self, split: str, ids: list):
         path_txt = os.path.join(self.path_root, "%s.txt" % split)
         with open(path_txt, "w") as f:
             for id in ids:
                 f.write(os.path.join(self.path_root, "images", f"{id}.jpg") + "\n")
- 
+    '''
+    # Add this method to YOLO_Splitter class
+    def _setup_directories_and_copy_files(self):
+        for split in ["train", "val", "test"]:
+            dir_out = os.path.join(self.path_root, split)
+            os.makedirs(os.path.join(dir_out, "images"), exist_ok=True)
+            os.makedirs(os.path.join(dir_out, "labels"), exist_ok=True)
+
+            for id in getattr(self, f"id_{split}"):
+                # copy images
+                shutil.copy(
+                    os.path.join(self.path_root, "images", f"{id}.jpg"),
+                    os.path.join(dir_out, "images", f"{id}.jpg")
+                )
+                # copy labels
+                shutil.copy(
+                    os.path.join(self.path_root, "labels", f"{id}.txt"),
+                    os.path.join(dir_out, "labels", f"{id}.txt")
+                )
+
+    # Modify the write_dataset method to call the new method
+    def write_dataset(self):
+        self._setup_directories_and_copy_files()  # Setup directories and copy files
+        self._write_yaml(classes=self.classes)
+        for split in ["train", "val", "test"]:
+            self._write_txt(split=split, ids=getattr(self, f"id_{split}"))
+        return self.path_yaml
+
+    # Modify _write_txt to reflect the new directory structure
+    def _write_txt(self, split: str, ids: list):
+        path_txt = os.path.join(self.path_root, "%s.txt" % split)
+        with open(path_txt, "w") as f:
+            for id in ids:
+                f.write(os.path.join(self.path_root, split, "images", f"{id}.jpg") + "\n")
+
     # def _handle_folders(self):
     #     for s in ["train", "val", "test"]:
     #         dir_out = os.path.join(self.path_root, s)

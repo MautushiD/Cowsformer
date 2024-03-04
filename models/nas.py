@@ -36,12 +36,13 @@ class Niche_YOLO_NAS:
         self.dir_train = dir_train
         self.dir_val = dir_val
         self.dir_test = dir_test
-        self.model = get_model(self.path_model, pretrained_weights="coco").to(DEVICE)
+        self.model = get_model(
+            self.path_model, pretrained_weights="coco").to(DEVICE)
         self.trainer = Trainer(experiment_name=name_task)
         self.train_data = None
         self.val_data = None
         self.test_data = None
-        
+
     def load(self, path_model=None, finetuned_chekpoint_path=None):
         # self.model = YOLO(path_model)
         if path_model is None:
@@ -81,18 +82,25 @@ class Niche_YOLO_NAS:
             )
         print("model %s loaded" % path_model)
         return self.model
-'''    
+'''
+
     def train(self, path_yaml, path_train_txt, path_val_txt, batch_size, num_epochs):
         with open(path_yaml, "r") as f:
             yaml_content = yaml.safe_load(f)
         num_classes = yaml_content["nc"]
-
+        
+        print('train text on nas.py',os.path.dirname(path_train_txt))
+        print('------------------------------------------------------------')
+        
         self.train_data = coco_detection_yolo_format_train(
             dataset_params={
+                #"data_dir": os.path.dirname(path_train_txt)+'/' + suffix+'_'+yolo_base+'_'+n_train+ '_'+iter,
                 "data_dir": os.path.dirname(path_train_txt),
-                "images_dir": "train/images",  # os.path.join(os.path.split(path_train_txt)[0],'images'),
-                "labels_dir": "train/labels",  # os.path.join(os.path.split(path_train_txt)[0],'labels'),
-                #'classes': num_classes
+                # os.path.join(os.path.split(path_train_txt)[0],'images'),
+                "images_dir": "train/images",
+                # os.path.join(os.path.split(path_train_txt)[0],'labels'),
+                "labels_dir": "train/labels",
+                # 'classes': num_classes
                 "classes": list(range(num_classes)),
             },
             dataloader_params={"batch_size": batch_size, "num_workers": 2},
@@ -101,9 +109,11 @@ class Niche_YOLO_NAS:
         self.val_data = coco_detection_yolo_format_val(
             dataset_params={
                 "data_dir": os.path.dirname(path_val_txt),
-                "images_dir": "val/images",  # os.path.join(os.path.split(path_val_txt)[0],'images'),
-                "labels_dir": "val/labels",  # os.path.join(os.path.split(path_val_txt)[0], 'labels'),
-                #'classes': num_classes
+                # os.path.join(os.path.split(path_val_txt)[0],'images'),
+                "images_dir": "val/images",
+                # os.path.join(os.path.split(path_val_txt)[0], 'labels'),
+                "labels_dir": "val/labels",
+                # 'classes': num_classes
                 "classes": list(range(num_classes)),
             },
             dataloader_params={"batch_size": batch_size, "num_workers": 2},
@@ -124,7 +134,7 @@ class Niche_YOLO_NAS:
             "zero_weight_decay_on_bias_and_bn": True,
             "ema": True,
             "ema_params": {"decay": 0.9, "decay_type": "threshold"},
-            "max_epochs": num_epochs,  ##
+            "max_epochs": num_epochs,
             "mixed_precision": False,
             "loss": PPYoloELoss(
                 use_static_assigner=False, num_classes=num_classes, reg_max=16
@@ -133,11 +143,10 @@ class Niche_YOLO_NAS:
                                                         top_k_predictions=300,
                                                         num_cls=num_classes,
                                                         normalize_targets=True,
-                                                        post_prediction_callback=PPYoloEPostPredictionCallback\
-                                                            (score_threshold=0.01,nms_top_k=1000,
-                                                             max_predictions=300,nms_threshold=0.7,)),
-                                   
-                                 ],
+                                                        post_prediction_callback=PPYoloEPostPredictionCallback(score_threshold=0.01, nms_top_k=1000,
+                                                                                                               max_predictions=300, nms_threshold=0.7,)),
+
+                                   ],
             "metric_to_watch": "mAP@0.50",
         }
 
@@ -148,8 +157,6 @@ class Niche_YOLO_NAS:
             valid_loader=self.val_data,
         )
 
-    
-    
     def evaluate_trained_model(self, best_model, data_yaml_path, data_type="test"):
         """
         Evaluates a trained model on test data.
@@ -164,7 +171,7 @@ class Niche_YOLO_NAS:
         with open(data_yaml_path, "r") as f:
             yaml_content = yaml.safe_load(f)
         class_ess = yaml_content["names"]
-        #print('num_classes', num_classes)
+        # print('num_classes', num_classes)
         if data_type == "test":
             data_path_txt = self.dir_test
             data = coco_detection_yolo_format_val(
@@ -196,7 +203,7 @@ class Niche_YOLO_NAS:
                     "images_dir": "images",
                     # os.path.join(os.path.split(path_train_txt)[0],'labels'),
                     "labels_dir": "labels",
-                    #'classes': num_classes
+                    # 'classes': num_classes
                     "classes": class_ess,
                 },
                 dataloader_params={"batch_size": 16, "num_workers": 2},
@@ -218,7 +225,7 @@ class Niche_YOLO_NAS:
         test_metrics_list = [DetectionMetrics_050(
             score_thres=0.5,
             top_k_predictions=300,
-            num_cls=1,#len(list(range(num_classes))),
+            num_cls=1,  # len(list(range(num_classes))),
             normalize_targets=True,
             post_prediction_callback=PPYoloEPostPredictionCallback(
                 score_threshold=0.5,
@@ -230,7 +237,7 @@ class Niche_YOLO_NAS:
             DetectionMetrics_050_095(
                 score_thres=0.5,
                 top_k_predictions=300,
-                num_cls=1,#len(list(range(num_classes))),
+                num_cls=1,  # len(list(range(num_classes))),
                 normalize_targets=True,
                 post_prediction_callback=PPYoloEPostPredictionCallback(
                     score_threshold=0.5,
@@ -238,7 +245,7 @@ class Niche_YOLO_NAS:
                     max_predictions=300,
                     nms_threshold=0.5,
                 ),
-            ),
+        ),
         ]
 
         return self.trainer.test(
@@ -246,8 +253,7 @@ class Niche_YOLO_NAS:
             test_loader=data,
             test_metrics_list=test_metrics_list,
         )
-     
-        
+
     def get_evaluation_matrix(
         self, best_model, data_yaml_path, data_type="test", conf=0.5, plot=True
     ):
@@ -279,7 +285,8 @@ class Niche_YOLO_NAS:
 
         for key in keys:
             annotation = ds.annotations[key]
-            annotation_batch = np.column_stack((annotation.xyxy, annotation.class_id))
+            annotation_batch = np.column_stack(
+                (annotation.xyxy, annotation.class_id))
             annotation_batches.append(annotation_batch)
 
             prediction = predictions[key]
@@ -296,8 +303,6 @@ class Niche_YOLO_NAS:
         )
         print("Confusion Matrix:", confusion_matrix.matrix)
 
-        
-
         if plot:
             confusion_matrix.plot(
                 os.path.join(data_dir, "confusion_matrix.png"), class_names=ds.classes
@@ -305,11 +310,14 @@ class Niche_YOLO_NAS:
         else:
             pass
 
-        return confusion_matrix     
-    
-    
+        return confusion_matrix
+
  ########################################################################
+<<<<<<< HEAD
+
+=======
     '''
+>>>>>>> 75d00b381e3a5fcb12b0505ee91bac59a8e8cc0a
     def get_map_scores(self, best_model, data_yaml_path, data_type="test"):
         if data_type == "test":
             data_dir = self.dir_test
@@ -328,14 +336,18 @@ class Niche_YOLO_NAS:
         predictions = []
         targets = []
         for image_name, image in ds.images.items():
-            result = list(best_model.predict(image))[0]
+            result = best_model.predict(image)
+            #result = list(best_model.predict(image))[0]
+            #print(result)
             detection_batch = np.column_stack(
-                (result.prediction.bboxes_xyxy, result.prediction.labels.astype(int), result.prediction.confidence)
+                (result.prediction.bboxes_xyxy, result.prediction.labels.astype(
+                    int), result.prediction.confidence)
             )
             predictions.append(detection_batch)
 
             annotation = ds.annotations[image_name]
-            target_batch = np.column_stack((annotation.xyxy, annotation.class_id))
+            target_batch = np.column_stack(
+                (annotation.xyxy, annotation.class_id))
             targets.append(target_batch)
 
         mean_average_precision = sv.MeanAveragePrecision.from_tensors(
@@ -347,6 +359,8 @@ class Niche_YOLO_NAS:
         map50_95 = mean_average_precision.map50_95
 
         return {"mAP@50": map50, "mAP@50:95": map50_95}
+<<<<<<< HEAD
+=======
 
     '''  
     def get_map_scores(self, best_model, data_yaml_path, data_type="test"):
@@ -408,3 +422,4 @@ class Niche_YOLO_NAS:
             "n_fn": int(n_fn),
             "n_fp": int(n_fp),
         }   
+>>>>>>> 75d00b381e3a5fcb12b0505ee91bac59a8e8cc0a
