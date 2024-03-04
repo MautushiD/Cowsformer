@@ -1,7 +1,7 @@
 #!/bin/sh
 #SBATCH -p dgx_normal_q
 #SBATCH --account=niche_squad
-#SBATCH --time=119:30:00
+#SBATCH --time=120:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=4
 #SBATCH --gres=gpu:1
@@ -16,11 +16,11 @@ export PYTORCH_CUDA_ALLOC_CONF=garbage_collection_threshold:0.6,max_split_size_m
 
 # Nested loops to run the Python script with different configurations
 for i in {1..12}; do
-    for n_train in 10 25 50 100 200; do
+    for n_train in 16 32 64 128 250; do
         for yolo_base in "yolo_nas_s" "yolo_nas_m" "yolo_nas_l"; do
             suffix="exp_${yolo_base}_${n_train}_${i}"
             echo "Iteration $i, n_train $n_train, model $yolo_base, suffix $suffix"
-            python trial_nas.py \
+            python breed_nas.py \
                 --iter $i \
                 --n_train $n_train \
                 --yolo_base $yolo_base \
