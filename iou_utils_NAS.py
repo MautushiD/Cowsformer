@@ -12,8 +12,6 @@ from super_gradients.training.dataloaders.dataloaders import (
     coco_detection_yolo_format_val,
 )
 import cv2
-import torch
-from torchvision import transforms
 
 
 dataset_params = {
@@ -53,10 +51,10 @@ def save_predict_images_from_dir(model, image_dir, output_dir, conf=0.60, show=F
 def show_predicted_images_from_dir(model, image_dir, conf=0.60):
     # Get a list of all image files in the directory
     image_files = list(Path(image_dir).rglob("*.jpg"))
-    end = min(5, len(image_files))
+
     # Loop over all images and make predictions
     predictions = []
-    for image_file in image_files[2:end]:  # for image_file in image_files:
+    for image_file in image_files:
         # Load image
         img = Image.open(image_file)
 
@@ -99,22 +97,24 @@ def cxcyxy_to_xyxy(image_label_txt, image_path):
 
 
 def get_boxes_xyxy(model, image_path, conf=0.6):
-    # Input:
-    # model : yolo_nas_l // best_model
-    # image_path: 'pth/to/local/img_1.jpg'
-    # conf = confidence
+    # Assuming model.predict returns a single ImageDetectionPrediction object
+    # for the given image.
+    result = model.predict(image_path, conf)
 
-    # Output:
-    # all_boxes = list of list | coordinate of all bounding boxes
-
-    results = model.predict(image_path, conf)
+    # Assuming result contains an attribute that directly gives us the bounding boxes,
+    # which might be named differently. Replace `bboxes_xyxy` with the correct attribute name.
     all_boxes = []
-    for image_prediction in results:
-        bboxes = image_prediction.prediction.bboxes_xyxy
-        for i, (bbox) in enumerate(bboxes):
+    if hasattr(result, 'prediction') and hasattr(result.prediction, 'bboxes_xyxy'):
+        # Directly accessing bounding boxes from the result's prediction attribute.
+        bboxes = result.prediction.bboxes_xyxy
+        for bbox in bboxes:
             all_boxes.append(bbox.tolist())
+    else:
+        # Handle the case where the expected attributes are not present.
+        print("The prediction object does not have the expected structure.")
 
     return all_boxes
+
 
 
 def box_area(box_xyxy):
@@ -203,45 +203,87 @@ def draw_boxes_all_models(image_path, prediction_dict):
     plt.show()
 
 
-def get_boxex_for_all_models(image_path, image_label, default_model, finetuned_model, conf=0.6):
-    # Check if the filename starts with 'side_' or 'top_'
-    filename = os.path.basename(image_path)
-    if filename.startswith('side_'):
-        split_prefix = 'side_'
-    elif filename.startswith('top_'):
-        split_prefix = 'top_'
-    else:
-        split_prefix = ''  # or handle unknown prefix
-
-    # Rename the image based on the prefix
-    split_name_0 = image_path.split(split_prefix, 1)
-    image_name_0 = split_prefix + \
-        split_name_0[1] if split_name_0[1:] else 'unknown'
-    split_name = image_name_0.split('_jpg', 1)
+def get_boxex_for_all_models(
+    image_path, image_label, default_model, finetuned_model, conf=0.6
+):
+    # renaming image
+    # Split the string at the first occurrence of "_jpg"
+    split_name_0 = image_path.split("img_", 1)
+    # The split method returns a list, so you need to get the first element
+    image_name_0 = "img_" + split_name_0[1]
+    # Split the string at the first occurrence of "_jpg"
+    split_name = image_name_0.split("_jpg", 1)
+    # The split method returns a list, so you need to get the first element
     image_name = split_name[0]
 
-    # Get predictions
-    gt_image = Image.open(image_path)  # Ground truth (no model prediction)
-    predicted_image_default = default_model.predict(
-        image_path, conf)  # Default YOLO NAS
-    predicted_image_finetuned = finetuned_model.predict(
-        image_path, conf)  # Finetuned YOLO NAS
+    # get predictions
+    # in case of ground truth (no model prediction)
+    gt_image = Image.open(image_path)
+    # in case of default yolo_nas
+    predicted_image_default = default_model.predict(image_path, conf)
+    # in case of finetned yolo_nas
+    predicted_image_finetuned = finetuned_model.predict(image_path, conf)
 
-    # Get bounding boxes
-    gt_boxes = cxcyxy_to_xyxy(image_label, image_path)  # Ground truth
-    default_model_boxes = get_boxes_xyxy(
-        default_model, image_path, conf)  # Default YOLO NAS
-    finetuned_model_boxes = get_boxes_xyxy(
-        finetuned_model, image_path, conf)  # Finetuned YOLO NAS
+    # get bounding boxes
+    # in case of ground truth (no model prediction)
+    gt_boxes = cxcyxy_to_xyxy(image_label, image_path)
+    # in case of default yolo_nas
+    default_model_boxes = get_boxes_xyxy(default_model, image_path, conf)
+    # in case of finetned yolo_nas
+    finetuned_model_boxes = get_boxes_xyxy(finetuned_model, image_path, conf)
 
-    prediction_dict = {
-        "image": image_name,
-        "Ground_Truth_boxes": gt_boxes,
-        "Default_YoloNas_boxes": default_model_boxes,
-        "Finetuned_YoloNas_boxes": finetuned_model_boxes
-    }
+    prediction_dict = {}
+
+    prediction_dict["image"] = image_name
+    prediction_dict["Ground_Truth_boxes"] = gt_boxes
+    prediction_dict["Default_YoloNas_boxes"] = default_model_boxes
+    prediction_dict["Finetuned_YoloNas_boxes"] = finetuned_model_boxes
 
     return prediction_dict
+
+
+'''
+def compute_iou_for_all_models(prediction_dict):
+    image_name = prediction_dict["image"]
+    gt_boxes = prediction_dict["Ground_Truth_boxes"]
+    defalt_yoloNas_boxes = prediction_dict["Default_YoloNas_boxes"]
+    finetuned_yoloNas_boxes = prediction_dict["Finetuned_YoloNas_boxes"]
+
+    final_iou_default = []  # only keep highest IoU for each ground truth box
+    final_pbb_default = (
+        []
+    )  # only keep the bb with the highest IoU for each ground truth box
+
+    final_iou_finetuned = []  # only keep highest IoU for each ground truth box
+    final_pbb_finetuned = (
+        []
+    )  # only keep the bb with the highest IoU for each ground truth box
+
+    for gt_box in gt_boxes:
+        ls_iou_default = []
+        for pred_box in defalt_yoloNas_boxes:
+            iou = bbox_iou(gt_box, pred_box)
+            ls_iou_default.append(iou)
+        idx_max = np.argmax(ls_iou_default)  # find the position with the highest IoU
+        final_iou_default.append(ls_iou_default[idx_max])
+        final_pbb_default.append(defalt_yoloNas_boxes[idx_max])
+
+    for gt_box in gt_boxes:
+        ls_iou_finetuned = []
+        for pred_box in finetuned_yoloNas_boxes:
+            iou = bbox_iou(gt_box, pred_box)
+            ls_iou_finetuned.append(iou)
+        idx_max = np.argmax(ls_iou_finetuned)  # find the position with the highest IoU
+        final_iou_finetuned.append(ls_iou_finetuned[idx_max])
+        final_pbb_finetuned.append(finetuned_yoloNas_boxes[idx_max])
+
+    iou_dict = {}
+    iou_dict["image"] = image_name
+    iou_dict["IOU_with_default_YoloNAS"] = final_iou_default
+    iou_dict["IOU_with_finetuned_YoloNAS"] = final_iou_finetuned
+
+    return iou_dict
+'''
 
 
 def compute_iou_for_all_models(prediction_dict):
@@ -293,171 +335,5 @@ def compute_iou_for_all_models(prediction_dict):
     iou_dict["image"] = image_name
     iou_dict["IOU_with_default_YoloNAS"] = final_iou_default
     iou_dict["IOU_with_finetuned_YoloNAS"] = final_iou_finetuned
-    iou_dict["Predicted_boxes_with_finetuned_YoloNAS"] = final_pbb_finetuned
-    iou_dict["Predicted_boxes_with_default_YoloNAS"] = final_pbb_default
 
     return iou_dict
-
-
-################
-'''
-def parse_label_file(label_path):
-    """
-    Parses a YOLO format label file.
-    Args:
-    - label_path: Path to the label file
-    Returns:
-    - A list of bounding boxes. Each bounding box is represented as a dictionary.
-    """
-    boxes = []
-    with open(label_path, 'r') as file:
-        lines = file.readlines()
-        for line in lines:
-            elements = line.strip().split()
-            cls, x_center, y_center, width, height = map(float, elements)
-            box = {
-                'class': cls,
-                'x_center': x_center,
-                'y_center': y_center,
-                'width': width,
-                'height': height
-            }
-            boxes.append(box)
-    return boxes
-
-
-def compute_AP_for_image(iou_list, iou_threshold=0.5):
-    # Sorting the predictions based on confidence might be required,
-    # but assuming you've already done this when you call model.predict
-    true_positives = np.array(
-        [1 if iou >= iou_threshold else 0 for iou in iou_list])
-    false_positives = 1 - true_positives
-
-    # Compute the cumulative sums
-    tp_cumsum = np.cumsum(true_positives)
-    fp_cumsum = np.cumsum(false_positives)
-
-    recalls = tp_cumsum / float(len(iou_list))
-    precisions = tp_cumsum / (tp_cumsum + fp_cumsum)
-
-    # Interpolation step: For each level of recall, find the max precision:
-    interpolated_precisions = []
-    for recall_level in np.linspace(0.0, 1.0, 100):
-        try:
-            args = np.where(recalls >= recall_level)[0]
-            interpolated_precisions.append(max(precisions[args]))
-        except:
-            interpolated_precisions.append(0.0)
-
-    average_precision = np.mean(interpolated_precisions)
-    return average_precision
-
-
-def read_label_file(label_file_path):
-    """
-    Reads a YOLOv5 label file and returns the ground truths.
-    """
-    with open(label_file_path, 'r') as file:
-        lines = file.readlines()
-    # Convert each line into a list [class_id, x_center, y_center, width, height]
-    boxes = [list(map(float, line.strip().split())) for line in lines]
-    return boxes
-
-
-def preprocess_image(image_path):
-    transform = transforms.Compose([
-        # Resize to the input size your model expects. Change if necessary.
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        # normalization based on ImageNet stats
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[
-                             0.229, 0.224, 0.225]),
-    ])
-
-    image = Image.open(image_path).convert('RGB')
-    return transform(image).unsqueeze(0)  # unsqueeze to add batch dimension
-
-def compute_mAP_for_test_data(model, images):
-    # Initialize the data
-    det_preds = []
-    det_gts = []
-
-    # Label directory
-    image_label_dir = "/Users/mautushid/github/Cowsformer/data/cow200/yolov5/test/labels"
-
-    for image in images:
-        tensor_image = preprocess_image(image)  # preprocess the image
-        with torch.no_grad():
-            preds = model(tensor_image)
-        det_preds.append(preds)
-
-        # Get the filename (without extension) of the current image
-        image_name = os.path.basename(image).rsplit('.', 1)[0]  # Extract the filename without extension
-        label_file = os.path.join(image_label_dir, f"{image_name}.txt")
-
-        # read and store the ground truths (based on your specific format)
-        gt = parse_label_file(label_file)
-        det_gts.append(gt)
-
-    mAP = calculate_mAP(det_preds, det_gts)
-    return mAP
-
-
-def some_mAP_computation_method(det_preds, gt_boxes):
-    # Placeholder for actual mAP computation
-    # This is a dummy value; in a real scenario, you'd compare predictions with ground truths
-    return 0.9
-'''
-
-
-def evaluate_predictions(prediction_dict, iou_threshold=0.5):
-    image_name = prediction_dict["image"]
-    gt_boxes = prediction_dict["Ground_Truth_boxes"]
-    defalt_yoloNas_boxes = prediction_dict["Default_YoloNas_boxes"]
-    finetuned_yoloNas_boxes = prediction_dict["Finetuned_YoloNas_boxes"]
-
-    TP_default = 0
-    FN_default = 0
-    FP_default = len(defalt_yoloNas_boxes)
-
-    TP_finetuned = 0
-    FN_finetuned = 0
-    FP_finetuned = len(finetuned_yoloNas_boxes)
-
-    for gt_box in gt_boxes:
-        # Default Model
-        ious_default = [bbox_iou(gt_box, pred_box)
-                        for pred_box in defalt_yoloNas_boxes]
-        if ious_default and max(ious_default) >= iou_threshold:
-            TP_default += 1
-            FP_default -= 1  # Remove false positive since this prediction is true
-        else:
-            FN_default += 1
-
-        # Finetuned Model
-        ious_finetuned = [bbox_iou(gt_box, pred_box)
-                          for pred_box in finetuned_yoloNas_boxes]
-        if ious_finetuned and max(ious_finetuned) >= iou_threshold:
-            TP_finetuned += 1
-            FP_finetuned -= 1
-        else:
-            FN_finetuned += 1
-
-    # Calculate precision and recall for both models
-    precision_default = TP_default / \
-        (TP_default + FP_default) if TP_default + FP_default != 0 else 0
-    recall_default = TP_default / \
-        (TP_default + FN_default) if TP_default + FN_default != 0 else 0
-
-    precision_finetuned = TP_finetuned / \
-        (TP_finetuned + FP_finetuned) if TP_finetuned + FP_finetuned != 0 else 0
-    recall_finetuned = TP_finetuned / \
-        (TP_finetuned + FN_finetuned) if TP_finetuned + FN_finetuned != 0 else 0
-
-    return {
-        "image": image_name,
-        "precision_default": precision_default,
-        "recall_default": recall_default,
-        "precision_finetuned": precision_finetuned,
-        "recall_finetuned": recall_finetuned
-    }

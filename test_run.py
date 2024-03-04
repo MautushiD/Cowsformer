@@ -18,23 +18,27 @@ env_config = {
 
 # Loop configurations similar to the Bash script
 iterations = range(1, 3)  # Python ranges are exclusive on the end, so use 3 to include 2
-n_train_values = [10, 200]
+n_train_values = [5, 20]
 yolo_bases = ["yolo_nas_s", "yolo_nas_m", "yolo_nas_l"]
 
 # Main loop to execute trial_nas.py with varying parameters
 for i in iterations:
     for n_train in n_train_values:
         for yolo_base in yolo_bases:
-            suffix = f"exp_{yolo_base}_{n_train}_{i}"
-            print(f"Iteration {i}, n_train {n_train}, model {yolo_base}, suffix {suffix}")
+            #suffix = 'ttt'
+            #folder_name = f"{suffix}_{yolo_base}_{n_train}_{i}"
             
+            suffix = f"aaa_{yolo_base}_{n_train}_{i}"
+            #print(f"Iteration {i}, n_train {n_train}, model {yolo_base}, suffix {suffix}, folder_name {folder_name}")
+            print(f"Iteration {i}, n_train {n_train}, model {yolo_base}, suffix {suffix}")
+            ttt ='aaa'
             # Construct the command
             command = [
                 "python", "trial_nas.py",
                 "--iter", str(i),
                 "--n_train", str(n_train),
                 "--yolo_base", yolo_base,
-                "--suffix", suffix
+                "--suffix", ttt
             ]
             
             # Run the command
