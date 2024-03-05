@@ -73,8 +73,10 @@ class YOLO_Splitter(Splitter):
         self.id_train = self.ids[:n_train]
         self.id_val = self.ids[n_train : n_train + n_val]
         self.id_test = self.ids[n_train + n_val :]
-
-    def shuffle_train_val(self, n_included=0):
+     
+    
+    #'''
+    def shuffle_train_val(self, n_included=0, k=5):
         """
         prerequisite
         ------------
@@ -91,16 +93,24 @@ class YOLO_Splitter(Splitter):
         id_test = [i[:-4] for i in id_test] # 001.jpg -> 001
         # obtain which ids are to be shuffled
         id_remaining = [f for f in self.ids if f not in id_test]
+        
+        # determine n (n_included)
+        total_n = len(id_remaining)
+        if n_included is None:
+            n_included = total_n
+        elif isinstance(n_included, float):
+            n_included = int(n_included * total_n)
+        n_val = int(n_included / k)
+        
         random.shuffle(id_remaining)
         # obtain each split size
         n_included = len(id_remaining) if n_included == 0 else n_included
-        ratio_train = self.ratio_train / (self.ratio_train + self.ratio_val)
-        n_train = int(ratio_train * n_included)
-        n_val = n_included - n_train
+        n_train = n_included - n_val
         # assignment
         self.id_train = id_remaining[:n_train]
         self.id_val = id_remaining[n_train : n_train + n_val]
         self.id_test = id_test
+    #'''
     '''
     def write_dataset(self):
         self._write_yaml(classes=self.classes)

@@ -40,12 +40,16 @@ __pycache__
 *.cache
 
 # folders
-slides/
-modules/
-old_checkpoints/
-checkpoints_breed/
+slides/*
+modules/*
+old_checkpoints/*
+checkpoints_breed/*
+checkpoints/*
+checkpoints_cow200/*
 
 # exception
 !**/demo/**
 !requirements.txt
-old_checkpoints/
+old_checkpoints/*
+
+
