@@ -149,7 +149,76 @@ class Niche_YOLO_NAS:
         )
 
     
+    def prediction(self,data_yaml_path,finetuned_model_path,CONFIDENCE_TRESHOLD = 0.5 ):
+        
+        ds = sv.DetectionDataset.from_yolo(
+        images_directory_path=self.dir_test+"/images",
+        annotations_directory_path=self.dir_test+"/labels",
+        data_yaml_path=data_yaml_path,
+        force_masks=False)
+        model = self.load(self.path_model,finetuned_model_path)
+        predictions = {}
+
+        for image_name, image in ds.images.items():
+            result = (model.predict(
+                image, conf=CONFIDENCE_TRESHOLD))
+            detections = sv.Detections(
+                xyxy=result.prediction.bboxes_xyxy,
+                #xyxy=result.prediction.bboxes_xywh,
+                confidence=result.prediction.confidence,
+                class_id=result.prediction.labels.astype(int)
+            )
+            predictions[image_name] = detections
+            
+        return predictions
+    def predictionLocal(self,data_yaml_path,finetuned_model_path,CONFIDENCE_TRESHOLD = 0.5 ):
+        
+        ds = sv.DetectionDataset.from_yolo(
+        images_directory_path=self.dir_test+"/images",
+        annotations_directory_path=self.dir_test+"/labels",
+        data_yaml_path=data_yaml_path,
+        force_masks=False)
+        model = self.load(self.path_model,finetuned_model_path)
+        predictions = {}
+
+        for image_name, image in ds.images.items():
+            result = list(model.predict(
+                image, conf=CONFIDENCE_TRESHOLD))[0]
+            detections = sv.Detections(
+                xyxy=result.prediction.bboxes_xyxy,
+                #xyxy=result.prediction.bboxes_xywh,
+                confidence=result.prediction.confidence,
+                class_id=result.prediction.labels.astype(int)
+            )
+            predictions[image_name] = detections
+            
+        return predictions
     
+    def write_predictions(self,predictions,output_directory):
+        # Ensure the output directory exists
+        if not os.path.exists(output_directory):
+            os.makedirs(output_directory)
+
+        # Iterate over the predictions and write them to files
+        for image_path, detections in predictions.items():
+            # Extract the base filename without the directory path and extension
+            base_filename = os.path.basename(image_path)  # Gets the filename from the path
+            base_filename = os.path.splitext(base_filename)[0]  # Removes the file extension
+    
+            # Prepare the output file path
+            output_file_path = os.path.join(output_directory, base_filename + '.txt')
+
+            # Open the file and write the detections
+            with open(output_file_path, 'w') as file:
+                for bbox, conf, class_id in zip(detections.xyxy, detections.confidence, detections.class_id):
+                    # Ensure numbers are formatted as strings with appropriate precision
+                    bbox_str = ' '.join(f"{x:.2f}" for x in bbox)  # Formats bbox coordinates
+                    detection_str = f"{class_id} {bbox_str} {conf:.5f}\n"  # Formats the entire detection string
+                    
+                    # Write to file
+                    file.write(detection_str)
+        
+        
     def evaluate_trained_model(self, best_model, data_yaml_path, data_type="test"):
         """
         Evaluates a trained model on test data.

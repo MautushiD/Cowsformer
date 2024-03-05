@@ -67,6 +67,8 @@ import shutil
 import random
 import PIL
 import torch
+import glob
+
 import numpy as np
 import supervision as sv
 
@@ -136,6 +138,36 @@ class YOLO_API:
         a list of aboslute paths of labels
         """
         return self.get_filepaths(split, "labels")
+    
+  
+    
+    def get_labels_pred(self, split):
+        """
+        Dynamically find the directory name ending with 'labelsPred' and fetch label files from it.
+
+        Parameters
+        ----------
+        split : str
+            "train" or "test"
+
+        Returns
+        -------
+        list
+            A list of absolute paths of labels
+        """
+        base_path = os.path.join(self.root, split)
+        labels_pred_dir_pattern = os.path.join(base_path, "*labelsPred")
+        labels_pred_dirs = glob.glob(labels_pred_dir_pattern)
+        
+        # Assuming there's only one such directory
+        if labels_pred_dirs:
+            # Extract the dynamic folder name part that matches the criteria
+            dynamic_folder_name = os.path.basename(labels_pred_dirs[0])
+            # Now pass this dynamic folder name to self.get_filepaths
+            return self.get_filepaths(split, dynamic_folder_name)
+        else:
+            return []  # Return an empty list if no matching directory is found
+
 
     def get_filepaths(self, split, folder):
         """
@@ -244,14 +276,14 @@ class YOLO_API:
         ------
         a list of sv.Detections
         """
-        print(split)
+        #print(split)
         detections = []
         # get file paths
         if path_preds:
             labels = [f for f in os.listdir(path_preds) if f.endswith(".txt")]
             labels = sorted([os.path.join(path_preds, f) for f in labels])
         else:
-            labels = self.get_labels(split)
+            labels = self.get_labels_pred(split)
         images = self.get_images(split)
         n_samples = len(images)
         # iterate each pair of image and label
