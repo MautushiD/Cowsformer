@@ -1,6 +1,7 @@
 import os
 os.chdir("..")
-ROOT = os.getcwd()
+ROOT = os.getcwd()+"/Cowsformer/"
+print(ROOT)
 #os.environ['TORCH_HOME'] = '/home/mautushid/.torch'
 from ultralytics import NAS
 from models.nas import *
@@ -21,7 +22,7 @@ def main(args):
     n = args.n
     iteration = args.iteration
     config_short = config.split("_")[-1]
-
+    
     dir_train = ROOT+ "/data/"+config+"/tv/"+ exp_name+"_"+ yolo_base + "_" + \
             str(n) + "_" + str(iteration) + "_" + config_short+ "_" + yolo_base +"_" + str(n) + "_" + str(iteration) + "/"+ "train"
     dir_val = ROOT+ "/data/"+config+"/tv/"+ exp_name+"_"+ yolo_base + "_" + \
@@ -32,6 +33,7 @@ def main(args):
                 str(n) + "_" + str(iteration) + "_" + config_short+ "_" + yolo_base +"_" + str(n) + "_" + str(iteration) + "/"+ "data.yaml"
     base_dir = ROOT + "/checkpoints/n" + str(n) + "_" + yolo_base + "_i" + str(iteration) + "_" + config_short
     items_under_base = os.listdir(base_dir)[0]
+    
     finetuned_model_path = base_dir + "/"+ items_under_base + "/ckpt_best.pth"
     output_dir = dir_test +"/"+ yolo_base +"_"+ str(n)+"_"+str(iteration)+ "_labelsPred"
 
