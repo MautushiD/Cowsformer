@@ -139,8 +139,6 @@ class YOLO_API:
         """
         return self.get_filepaths(split, "labels")
     
-  
-    
     def get_labels_pred(self, split):
         """
         Dynamically find the directory name ending with 'labelsPred' and fetch label files from it.
@@ -186,7 +184,7 @@ class YOLO_API:
         ls_files = [os.path.join(path_files, f) for f in ls_files]
         return sorted(ls_files)
 
-    def get_gt_detections(self, split, path_preds=None):
+    def get_gt_detections(self, gt_label_path, gt_img_path):
         """
         get sv.Detections from labels
 
@@ -205,15 +203,14 @@ class YOLO_API:
         ------
         a list of sv.Detections
         """
-        print(split)
+      
         detections = []
         # get file paths
-        if path_preds:
-            labels = [f for f in os.listdir(path_preds) if f.endswith(".txt")]
-            labels = sorted([os.path.join(path_preds, f) for f in labels])
-        else:
-            labels = self.get_labels(split)
-        images = self.get_images(split)
+        
+        labels = [f for f in os.listdir(gt_label_path) if f.endswith(".txt")]
+        labels = sorted([os.path.join(gt_label_path, f) for f in labels])
+        
+        images = self.get_images(gt_img_path)
         n_samples = len(images)
         # iterate each pair of image and label
         for i in range(n_samples):
@@ -225,6 +222,9 @@ class YOLO_API:
             with open(label, "r") as f:
                 lines = f.readlines()
                 lines = [i.strip() for i in lines]
+                
+            if not lines:  # Checks if lines list is empty
+                continue
             # each detection in the image/label
             ls_xyxy = []
             ls_cls = []
@@ -235,7 +235,8 @@ class YOLO_API:
                 coords = tuple(
                     map(float, parts[1:5])
                 )  # x_center, y_center, width, height
-                conf = float(parts[5]) if path_preds else None
+                #conf = float(parts[5]) if path_preds else None
+                
                 xyxy = xywh2xyxy(
                     coords,
                     img_size=(img_w, img_h),
@@ -243,8 +244,7 @@ class YOLO_API:
                 # append to lists
                 ls_xyxy.append(xyxy)
                 ls_cls.append(class_id)
-                if path_preds:
-                    ls_conf.append(conf)
+                
             # create sv.Detections
             ls_xyxy = torch.stack(ls_xyxy).numpy()
             ls_cls = np.array(ls_cls)
@@ -252,12 +252,12 @@ class YOLO_API:
             detection = sv.Detections(
                 ls_xyxy,
                 class_id=ls_cls,
-                confidence=ls_conf if path_preds else None,
+                confidence= None,
             )
             detections.append(detection)
         return detections
-    
-    def get_pred_detections(self, split, path_preds=None):
+
+    def get_pred_detections(self, path_preds):
         """
         get sv.Detections from labels
 
@@ -279,23 +279,23 @@ class YOLO_API:
         #print(split)
         detections = []
         # get file paths
-        if path_preds:
-            labels = [f for f in os.listdir(path_preds) if f.endswith(".txt")]
-            labels = sorted([os.path.join(path_preds, f) for f in labels])
-        else:
-            labels = self.get_labels_pred(split)
-        images = self.get_images(split)
-        n_samples = len(images)
+        
+        labels = [f for f in os.listdir(path_preds) if f.endswith(".txt")]
+        labels = sorted([os.path.join(path_preds, f) for f in labels])
+      
+        n_samples = len(labels)
         # iterate each pair of image and label
         for i in range(n_samples):
             # get image info
-            image = PIL.Image.open(images[i])
-            img_w, img_h = image.size
             # get annotation
             label = labels[i]
             with open(label, "r") as f:
                 lines = f.readlines()
                 lines = [i.strip() for i in lines]
+                
+            if not lines:
+                continue
+            
             # each detection in the image/label
             ls_xyxy = []
             ls_cls = []
@@ -321,6 +321,9 @@ class YOLO_API:
             ls_xyxy = torch.stack(ls_xyxy).numpy()
             ls_cls = np.array(ls_cls)
             ls_conf_array = np.array(ls_conf)
+            
+
+
             #print(ls_conf)
             #print(ls_conf_array)
             detection = sv.Detections(
@@ -330,6 +333,8 @@ class YOLO_API:
             )
             detections.append(detection)
         return detections
+
+    
 
     def clone(self, folder_name):
         """
