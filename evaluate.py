@@ -50,11 +50,11 @@ def from_sv(preds, obs):
     )
     # write json
     json_out = dict(
-        map5095=SV_MAP.map50_95,
-        map50=SV_MAP.map50,
-        precision=metric_matrix["precision"],
-        recall=metric_matrix["recall"],
-        f1=2
+        map5095= SV_MAP.map50_95,
+        map50= SV_MAP.map50,
+        precision= metric_matrix["precision"],
+        recall= metric_matrix["recall"],
+        f1 = 2
         * (metric_matrix["precision"] * metric_matrix["recall"])
         / (metric_matrix["precision"] + metric_matrix["recall"]),
         n_all=metric_matrix["tp"] + metric_matrix["fn"],
