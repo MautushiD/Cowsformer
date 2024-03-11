@@ -46,6 +46,7 @@ old_checkpoints/*
 checkpoints_breed/*
 checkpoints/*
 checkpoints_cow200/*
+checkpoints__/*
 
 # exception
 !**/demo/**

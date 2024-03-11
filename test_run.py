@@ -17,8 +17,8 @@ env_config = {
 }
 
 # Loop configurations similar to the Bash script
-iterations = range(1, 3)  # Python ranges are exclusive on the end, so use 3 to include 2
-n_train_values = [5, 20]
+iterations = range(1, 2)  # Python ranges are exclusive on the end, so use 3 to include 2
+n_train_values = [16]
 yolo_bases = ["yolo_nas_s", "yolo_nas_m", "yolo_nas_l"]
 
 # Main loop to execute trial_nas.py with varying parameters
@@ -34,7 +34,7 @@ for i in iterations:
             ttt ='aaa'
             # Construct the command
             command = [
-                "python", "trial_nas.py",
+                "python", "t2s_nas.py",
                 "--iter", str(i),
                 "--n_train", str(n_train),
                 "--yolo_base", yolo_base,

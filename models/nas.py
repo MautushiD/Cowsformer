@@ -1,5 +1,6 @@
 from webbrowser import get
-from super_gradients.training import Trainer, models
+from super_gradients.training import models, Trainer
+#from models.nas_trainer import Trainer
 from super_gradients.training.models import get as get_model
 from super_gradients.training.losses import PPYoloELoss
 from super_gradients.training.metrics import DetectionMetrics_050, DetectionMetrics_050_095
@@ -14,6 +15,7 @@ from onemetric.cv.object_detection import ConfusionMatrix
 import supervision as sv
 from onemetric.cv.object_detection import MeanAveragePrecision
 from data.splitter.yolo import YOLO_Splitter
+#from lightning.pytorch.callbacks import ModelCheckpoint
 import torch
 import yaml
 import json
@@ -111,8 +113,10 @@ class Niche_YOLO_NAS:
         ##############################
 
         train_params = {
+            #"resume": False, ### added new
+            "ckpt_name": False,
             "silent_mode": False,
-            "average_best_models": True,
+            "average_best_models": False,
             "warmup_mode": "linear_epoch_step",
             "warmup_initial_lr": 1e-6,
             "lr_warmup_epochs": 3,
@@ -147,7 +151,120 @@ class Niche_YOLO_NAS:
             train_loader=self.train_data,
             valid_loader=self.val_data,
         )
+        
+    
+    def evaluate_test_set(self,ROOT,yolo_base, config, exp_name, n, iteration):
+        config_short = config.split("_")[-1]
 
+        dir_train = ROOT + "/data/"+config+"/tv/" + exp_name+"_" + yolo_base + "_" + \
+            str(n) + "_" + str(iteration) + "_" + config_short + "_" + \
+            yolo_base + "_" + str(n) + "_" + str(iteration) + "/" + "train"
+        dir_val = ROOT + "/data/"+config+"/tv/" + exp_name+"_" + yolo_base + "_" + \
+            str(n) + "_" + str(iteration) + "_" + config_short + "_" + \
+            yolo_base + "_" + str(n) + "_" + str(iteration) + "/" + "val"
+        dir_test = ROOT + "/data/"+config + "/test"
+
+        data_yaml_path = ROOT + "/data/"+config+"/tv/" + exp_name+"_" + yolo_base + "_" + \
+            str(n) + "_" + str(iteration) + "_" + config_short + "_" + \
+            yolo_base + "_" + str(n) + "_" + str(iteration) + "/" + "data.yaml"
+        base_dir = ROOT + "/checkpoints/n" + \
+            str(n) + "_" + yolo_base + "_i" + \
+            str(iteration) + "_" + config_short
+        items_under_base = os.listdir(base_dir)[0]
+        finetuned_model_path = base_dir + "/" + items_under_base + "/ckpt_best.pth"
+        output_dir = dir_test + "/" + exp_name + "_" + yolo_base + "_" + \
+            str(n)+"_"+str(iteration) + "_labelsPred"
+
+        # Creating instance of Niche_YOLO_NAS class
+        my_nas = Niche_YOLO_NAS(yolo_base, dir_train,
+                                dir_val, dir_test, "cow200")
+        predictions = my_nas.prediction(data_yaml_path, finetuned_model_path)
+        my_nas.write_predictions(predictions, output_dir)
+
+    def remove_ckpt(self, checkpoint_dir,  type = 'latest'):
+        """
+        Removes the 'ckpt_latest.pth' file from the experiment's checkpoint directory within
+        the given base checkpoint directory. It searches for a subdirectory starting with 'RUN'
+        and keeps only the 'ckpt_best.pth' file in that subdirectory.
+
+        Args:
+            checkpoint_dir (str): Base path to the checkpoint directory which contains
+                                subdirectories for each experiment.
+        """
+        # Find the subdirectory starting with 'RUN'
+        run_dir = None
+        for item in os.listdir(checkpoint_dir):
+            if item.startswith('RUN') and os.path.isdir(os.path.join(checkpoint_dir, item)):
+                run_dir = item
+                break
+        
+        # Check if we found a 'RUN' directory
+        if run_dir is not None:
+            # Construct the full path to the 'ckpt_latest.pth' file
+            
+            if type == 'latest':
+            
+                latest_ckpt_path = os.path.join(checkpoint_dir, run_dir, 'ckpt_latest.pth')
+            elif type == 'best':
+                latest_ckpt_path = os.path.join(
+                    checkpoint_dir, run_dir, 'ckpt_best.pth')
+            else:
+                print('Type must be lateast or best')
+
+            # Check if the file exists
+            if os.path.isfile(latest_ckpt_path):
+                # Remove the 'ckpt_latest.pth' file
+                os.remove(latest_ckpt_path)
+                print(f"'{latest_ckpt_path}' has been removed.")
+            else:
+                print(f"No {type} checkpoint .pth file found to remove in: {os.path.join(checkpoint_dir, run_dir)}")
+        else:
+            print(f"No 'RUN' directory found in: {checkpoint_dir}")
+            
+            
+    def keep_best_ckpt(checkpoint_dir):
+        """
+        Removes all files except for the 'ckpt_best.pth' and '.txt' files from the experiment's
+        checkpoint directory within the given base checkpoint directory. It searches for a
+        subdirectory starting with 'RUN' and performs the cleanup in that subdirectory.
+
+        Args:
+            checkpoint_dir (str): Base path to the checkpoint directory which contains
+                                subdirectories for each experiment.
+        """
+        # Find the subdirectory starting with 'RUN'
+        run_dir = None
+        for item in os.listdir(checkpoint_dir):
+            if item.startswith('RUN') and os.path.isdir(os.path.join(checkpoint_dir, item)):
+                run_dir = item
+                break
+        
+        # Check if we found a 'RUN' directory
+        if run_dir is not None:
+            # Get the full path of the 'RUN' directory
+            full_run_dir = os.path.join(checkpoint_dir, run_dir)
+
+            # Iterate over the files in the 'RUN' directory
+            for file in os.listdir(full_run_dir):
+                file_path = os.path.join(full_run_dir, file)
+                # Remove all files except 'ckpt_best.pth' and '.txt' files
+                if not (file == 'ckpt_best.pth' or file.endswith('.txt')):
+                    if os.path.isfile(file_path):
+                        os.remove(file_path)
+                        print(f"Removed '{file_path}'")
+                    elif os.path.isdir(file_path):
+                        # If it's a directory, recursively delete it
+                        import shutil
+                        shutil.rmtree(file_path)
+                        print(f"Removed directory '{file_path}'")
+            print(f"Cleanup complete in: {full_run_dir}")
+        else:
+            print(f"No 'RUN' directory found in: {checkpoint_dir}")
+                
+            
+
+        
+    
     
     def prediction(self,data_yaml_path,finetuned_model_path,CONFIDENCE_TRESHOLD = 0.5 ):
         
@@ -475,3 +592,14 @@ class Niche_YOLO_NAS:
             "n_fn": int(n_fn),
             "n_fp": int(n_fp),
         }   
+def get_checkpoint(dir_out):
+    checkpoint_callback = ModelCheckpoint(
+        monitor="val_loss",
+        dirpath=dir_out,
+        mode="min",
+        save_top_k=1,
+        verbose=False,
+        save_last=False,
+        filename="model-{val_loss:.3f}",
+    )
+    return checkpoint_callback

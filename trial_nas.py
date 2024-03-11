@@ -18,17 +18,16 @@ DIR_OUT = os.path.join(ROOT, "out")
 DIR_MODEL = os.path.join(ROOT, "models")
 DIR_DATA = os.path.join(ROOT, "data")
 # Adjusted to match your directory structure
-#DIR_COW200 = os.path.join(DIR_DATA, "cow200", "yolov5" )
+DIR_COW200 = os.path.join(DIR_DATA, "cow200", "yolov5" )
 #DIR_COW200 = os.path.join(DIR_DATA, "2_light")
-DIR_COW200 = os.path.join(DIR_DATA, "1a_angle_t2s", "tv" )
+#DIR_COW200 = os.path.join(DIR_DATA, "1a_angle_t2s", "tv" )
 
 # model configuration
 BATCH = 16
-EPOCHS =  100
+EPOCHS =  2 #100
 
 
-def main(args):
-    # parse arguments
+def main(args):    # parse arguments
     i = args.iter
     n_train = args.n_train
     yolo_base = args.yolo_base
@@ -62,7 +61,7 @@ def main(args):
     elif 100<n_train:
         BATCH =16
     
-        
+      
     
     
     # define paths
@@ -90,7 +89,8 @@ def main(args):
     #path_val_txt = os.path.join(os.path.split(path_data)[0], 'val.txt')
     # os.path.join(DIR_COW200, 'test.txt')
     #path_test_txt = os.path.join(os.path.split(path_data)[0], 'test.txt')
-    
+
+    checkpoint_dir = ROOT + '/checkpoints/' + 'n'+str(n_train) + '_' + yolo_base + '_' + 'i' +str(i)
     path_train_txt = os.path.join(DIR_OUT_split, 'train.txt')
     path_val_txt = os.path.join(DIR_OUT_split, 'val.txt') #os.path.join(DIR_COW200, 'val.txt')
     path_test_txt = os.path.join(DIR_OUT_split, 'test.txt') #os.path.join(DIR_COW200, 'test.txt')
@@ -108,6 +108,21 @@ def main(args):
 
     # train
     yolo_nas.train(path_yaml, path_train_txt, path_val_txt, BATCH, EPOCHS)
+    
+    ## new function to keep only the best_ckpt.pth
+    yolo_nas.remove_ckpt(checkpoint_dir,'latest')
+  
+    
+    ### perfom evaluation
+    
+    yolo_nas.evaluate_test_set(ROOT,yolo_base, config, exp_name, n, iteration)
+    
+    # new function to keep only the best_ckpt.pth
+    yolo_nas.remove_ckpt(checkpoint_dir,'best')
+
+    
+    
+    
 
     
 
