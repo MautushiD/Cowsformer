@@ -288,6 +288,7 @@ class Niche_YOLO_NAS:
             predictions[image_name] = detections
             
         return predictions
+    
     def predictionLocal(self,data_yaml_path,finetuned_model_path,CONFIDENCE_TRESHOLD = 0.5 ):
         
         ds = sv.DetectionDataset.from_yolo(

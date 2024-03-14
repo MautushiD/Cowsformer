@@ -3,7 +3,7 @@ import argparse
 import yaml
 import torch
 
-
+#device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
@@ -41,9 +41,9 @@ def main(args):
     # shuffle dataset
     splitter = YOLO_Splitter(DIR_COW200, classes=["cow"], suffix=folder_name_string)
     
-   
+    #splitter = YOLO_Splitter(DIR_COW200, classes=["cow"], suffix=suffix)
     #splitter.shuffle_train_val(n_included=n_train)
-    splitter.shuffle_train_val(n_included=n_train, k=5)
+    splitter.shuffle_train_val(n_included=n_train,k=5)
     path_data = splitter.write_dataset()
     
     # log
@@ -57,7 +57,7 @@ def main(args):
         BATCH = 16
     
     # define paths
-   
+    #name_task = f"n{n_train}_{yolo_base[:-3]}_i{i}_{suffix}"
     name_task = f"n{n_train}_{yolo_base}_i{i}"+"_t2s"   #### need to change for each dataset ------------------------
     
     DIR_OUT_split = os.path.join(DIR_COW200, folder_name_string)
@@ -87,8 +87,9 @@ def main(args):
     checkpoint_dir = ROOT + '/checkpoints/' + 'n' + \
         str(n_train) + '_' + yolo_base + '_' + 'i' + str(i) + '_t2s'
     path_train_txt = os.path.join(DIR_OUT_split, 'train.txt')
-    path_val_txt = os.path.join(DIR_OUT_split, 'val.txt') 
-    path_test_txt = os.path.join(DIR_OUT_split, 'test.txt') 
+    path_val_txt = os.path.join(DIR_OUT_split, 'val.txt') #os.path.join(DIR_COW200, 'val.txt')
+    path_test_txt = os.path.join(DIR_OUT_split, 'test.txt') #os.path.join(DIR_COW200, 'test.txt')
+
     print("----------------------------------------------------------------------------")
     print('path_train_txt', path_train_txt)
     print('path_val_txt', path_val_txt)
@@ -96,7 +97,7 @@ def main(args):
     
     # path for the yaml file
     #path_yaml = os.path.join(os.path.split(path_data)[0], 'data.yaml') #os.path.join(DIR_COW200, 'data.yaml')
-    path_yaml = os.path.join(DIR_OUT_split, 'data.yaml') #os.path.join(DIR_COW200, 'data.yaml')
+    path_yaml = os.path.join(DIR_OUT_split, 'data.yaml')
     print('path_yaml', path_yaml)
 
     # train

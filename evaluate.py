@@ -25,6 +25,7 @@ def from_yolo(metrics):
     n_all = conf_mat[:, 0].sum()
     n_fn = conf_mat[1, 0].sum()
     n_fp = conf_mat[0, 1].sum()
+    
     # write json
     json_out = dict(
         map5095=map5095,

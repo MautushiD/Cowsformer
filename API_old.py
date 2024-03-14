@@ -184,117 +184,218 @@ class YOLO_API:
         ls_files = [os.path.join(path_files, f) for f in ls_files]
         return sorted(ls_files)
 
+    def get_gt_detections(self, gt_label_path, gt_img_path):
+        """
+        get sv.Detections from labels
 
-    
-    def get_gt_pred_detections(self, gt_img_path,gt_label_path,pred_label_path):
-            
-        gt_detections = []
-        gt_labels = [f for f in os.listdir(gt_label_path) if f.endswith(".txt")]
-        gt_labels = sorted([os.path.join(gt_label_path, f) for f in gt_labels])
-        gt_images = self.get_images(gt_img_path)
-        n_samples_gt = len(gt_images)
+        params
+        ------
+        split: str
+            "train" or "test"
+        path_results: str
+            path to the dir of predictions (.txt).
+            If provided, the detections will be
+            created from the predictions, and the format will be
+            [class_id, x_center, y_center, width, height, confidence].
+            Otherwise, from the labels.
+
+        return
+        ------
+        a list of sv.Detections
+        """
+      
+        detections = []
+        # get file paths
         
-        pred_detections = []
-        pred_labels = [f for f in os.listdir(pred_label_path) if f.endswith(".txt")]
-        pred_labels = sorted([os.path.join(pred_label_path, f) for f in pred_labels])
-        n_samples_pred = len(pred_labels)
+        labels = [f for f in os.listdir(gt_label_path) if f.endswith(".txt")]
+        labels = sorted([os.path.join(gt_label_path, f) for f in labels])
         
-        if n_samples_gt != n_samples_pred:
-            print('gt_images and pred images are not same')
-        else:
-            pass
-        
-        
-        for i in range(n_samples_gt):
+        images = self.get_images(gt_img_path)
+        n_samples = len(images)
+        # iterate each pair of image and label
+        for i in range(n_samples):
             # get image info
-            image = PIL.Image.open(gt_images[i])
+            image = PIL.Image.open(images[i])
             img_w, img_h = image.size
             # get annotation
-            gt_label = gt_labels[i]
-            pred_label = pred_labels[i]
-            
-            with open(gt_label, "r") as f:
-                gt_lines = f.readlines()
-                gt_lines = [i.strip() for i in gt_lines]
+            label = labels[i]
+            with open(label, "r") as f:
+                lines = f.readlines()
+                lines = [i.strip() for i in lines]
                 
-            with open(pred_label, "r") as f:
-                pred_lines = f.readlines()
-                pred_lines = [i.strip() for i in pred_lines]
-                
-            if not gt_lines:
-                #print('found empty GT')
-                continue
-            if gt_lines and not pred_lines:
-                #print('case found: empty pred')
-                pred_lines = ["0 0.000001 0.000002 0.000003 0.000004 0.0000001"]
-
-            ### get gt detections
-            
-            gt_ls_xyxy = []
-            gt_ls_cls = []
-            gt_ls_conf = []
-            for i in gt_lines:
-                gt_parts = i.split(" ")
-                gt_class_id = int(gt_parts[0])
-                gt_coords = tuple(
-                    map(float, gt_parts[1:5])
+            #if not lines:  # Checks if lines list is empty
+                #continue
+            # each detection in the image/label
+            ls_xyxy = []
+            ls_cls = []
+            ls_conf = []
+            for i in lines:
+                parts = i.split(" ")
+                class_id = int(parts[0])
+                coords = tuple(
+                    map(float, parts[1:5])
                 )  # x_center, y_center, width, height
                 #conf = float(parts[5]) if path_preds else None
                 
-                gt_xyxy = xywh2xyxy(
-                    gt_coords,
+                xyxy = xywh2xyxy(
+                    coords,
                     img_size=(img_w, img_h),
                 )
                 # append to lists
-                gt_ls_xyxy.append(gt_xyxy)
-                gt_ls_cls.append(gt_class_id)
+                ls_xyxy.append(xyxy)
+                ls_cls.append(class_id)
                 
             # create sv.Detections
-            gt_ls_xyxy = torch.stack(gt_ls_xyxy).numpy()
-            gt_ls_cls = np.array(gt_ls_cls)
-            gt_ls_conf = np.array(gt_ls_conf)
-            gt_detection = sv.Detections(
-                gt_ls_xyxy,
-                class_id=gt_ls_cls,
+            ls_xyxy = torch.stack(ls_xyxy).numpy()
+            ls_cls = np.array(ls_cls)
+            ls_conf = np.array(ls_conf)
+            detection = sv.Detections(
+                ls_xyxy,
+                class_id=ls_cls,
                 confidence= None,
             )
-            gt_detections.append(gt_detection)
+            detections.append(detection)
+        return detections
+    
+    def normalize_xyxy(self,bboxes, img_width=640, img_height=640):
+        """
+        Normalize bounding box coordinates from xyxy format.
+
+        Parameters:
+        - bboxes: A 2D numpy array of shape (n, 4), where n is the number of bounding boxes,
+                and each row is [x_min, y_min, x_max, y_max].
+        - img_width: The width of the image.
+        - img_height: The height of the image.
+
+        Returns:
+        - A 2D numpy array with normalized bounding box coordinates in xyxy format.
+        """
+        normalized_bboxes = np.zeros_like(bboxes)
+        
+        normalized_bboxes[:, 0] = bboxes[:, 0] / img_width   # Normalize x_min
+        normalized_bboxes[:, 1] = bboxes[:, 1] / img_height  # Normalize y_min
+        normalized_bboxes[:, 2] = bboxes[:, 2] / img_width   # Normalize x_max
+        normalized_bboxes[:, 3] = bboxes[:, 3] / img_height  # Normalize y_max
+
+        return normalized_bboxes
+
+
+    def normalize_xywh(self,xywh_unnorm, img_width=640, img_height=640):
+        """
+        Normalize bounding box coordinates from xywh format.
+
+        Parameters:
+        - xywh_unnorm: A 2D numpy array of shape (n, 4), where n is the number of bounding boxes,
+                    and each row is [x_center, y_center, width, height].
+        - img_width: The width of the image.
+        - img_height: The height of the image.
+
+        Returns:
+        - A 2D numpy array with normalized bounding box coordinates in xywh format.
+        """
+        normalized_xywh = np.zeros_like(xywh_unnorm)
+        
+        normalized_xywh[:, 0] = xywh_unnorm[:, 0] / img_width   # Normalize x_center
+        normalized_xywh[:, 1] = xywh_unnorm[:, 1] / img_height  # Normalize y_center
+        normalized_xywh[:, 2] = xywh_unnorm[:, 2] / img_width   # Normalize width
+        normalized_xywh[:, 3] = xywh_unnorm[:, 3] / img_height  # Normalize height
+
+        return normalized_xywh
+    
+    def get_pred_detections(self, pred_label_path):
+        """
+        get sv.Detections from labels
+
+        params
+        ------
+        split: str
+            "train" or "test"
+        path_results: str
+            path to the dir of predictions (.txt).
+            If provided, the detections will be
+            created from the predictions, and the format will be
+            [class_id, x_center, y_center, width, height, confidence].
+            Otherwise, from the labels.
+
+        return
+        ------
+        a list of sv.Detections
+        """
+        #print(split)
+        detections = []
+        # get file paths
+        
+        labels = [f for f in os.listdir(pred_label_path) if f.endswith(".txt")]
+        labels = sorted([os.path.join(pred_label_path, f) for f in labels])
+      
+        n_samples = len(labels)
+        # iterate each pair of image and label
+        for i in range(n_samples):
+            # get image info
+            # get annotation
+            label = labels[i]
+            with open(label, "r") as f:
+                lines = f.readlines()
+                lines = [i.strip() for i in lines]
+                
+            #if not lines:
+                #continue
             
-            ### get pred detections
-            
-            pred_ls_xyxy = []
-            pred_ls_cls = []
-            pred_ls_conf = []
-            for i in pred_lines:
-                pred_parts = i.split(" ")
+            # each detection in the image/label
+            ls_xyxy = []
+            ls_cls = []
+            ls_conf = []
+            for i in lines:
+                parts = i.split(" ")
                 #print(parts)
-                pred_class_id = int(pred_parts[0])
-                pred_coords = tuple(
-                    map(float, pred_parts[1:5])
+                class_id = int(parts[0])
+                coords = tuple(
+                    map(float, parts[1:5])
                 )  # x_center, y_center, width, height
-                pred_conf = float(pred_parts[5]) 
-                pred_coords = tuple(value for value in pred_coords)
-
-                pred_xyxy = torch.tensor(pred_coords)
+                conf = float(parts[5]) 
+                coords = tuple(value for value in coords)
+                #xyxy = xywh2xyxy(
+                    #coords,
+                    #img_size=(640, 640),
+                #)
+                xyxy = torch.tensor(coords)
                 # append to lists
-                pred_ls_xyxy.append(pred_xyxy)
-                pred_ls_cls.append(pred_class_id)
-                pred_ls_conf.append(pred_conf)
+                ls_xyxy.append(xyxy)
+                ls_cls.append(class_id)
+                ls_conf.append(conf)
             # create sv.Detections
-            pred_ls_xyxy = torch.stack(pred_ls_xyxy).numpy()
-            pred_ls_cls = np.array(pred_ls_cls)
-            pred_ls_conf_array = np.array(pred_ls_conf)
+            #ls_xyxy = self.normalize_xyxy(torch.stack(ls_xyxy).numpy())
+            ls_xyxy = torch.stack(ls_xyxy).numpy()
+            ls_cls = np.array(ls_cls)
+            ls_conf_array = np.array(ls_conf)
             
-            pred_detection = sv.Detections(
-                pred_ls_xyxy,
-                class_id=pred_ls_cls,
-                confidence=pred_ls_conf_array,
-            )
-            pred_detections.append(pred_detection)
-            
-            
-        return gt_detections,pred_detections
 
+            #print(ls_conf)
+            #print(ls_conf_array)
+            detection = sv.Detections(
+                ls_xyxy,
+                class_id=ls_cls,
+                confidence=ls_conf_array,
+            )
+            detections.append(detection)
+        return detections
+    
+    #def get_gt_pred_detections(self, gt_img_path,gt_label_path, pred_label_path):
+        
+        ## Step 1: read al txt files from  gt_label_path and pred_label_path
+        ## there should be same number of files for both ground truth (gt) labels and pred labels.
+        ## and the file name should also be the same.
+        
+        ## Step 2: create two lists of strings for gt_label
+        ### Step 2: for each corresponding pair of gt label .txt check if it is empty (no lines)
+            ## if it is empty. disregard the corresponding paris (both gt labels and pred labels)
+            ## go to next pair of files
+            
+            ## if not empty: perform 
+            ## groundtruth_detection = get_gt_detections(self, gt_label_path, gt_img_path):
+            ## prediction_detection = get_pred_detections(self, pred_label_path):
+
+    
 
     def clone(self, folder_name):
         """
