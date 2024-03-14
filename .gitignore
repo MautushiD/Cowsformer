@@ -47,7 +47,7 @@ checkpoints_breed/*
 checkpoints/*
 checkpoints_cow200/*
 checkpoints__/*
-
+data/*
 # exception
 !**/demo/**
 !requirements.txt
